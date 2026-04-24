@@ -1,16 +1,61 @@
-# React + Vite
+# Online Shopping
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A small e-commerce frontend built with React and Vite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Browse products by category
+- Open a dedicated product page by clicking any product card
+- Add products to the cart with quantity selection
+- Manage products from a simple admin page
+- Responsive UI for desktop and mobile
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React
+- Vite
+- Tailwind-style utility classes
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the development server:
+
+```bash
+npm run dev
+```
+
+3. Build for production:
+
+```bash
+npm run build
+```
+
+## Project Structure
+
+```text
+src/
+  components/   Reusable UI components
+  pages/        Product, cart, and admin pages
+  assets/       Static assets used by the app
+```
+
+## Notes
+
+- `node_modules` and build output are ignored from Git.
+- The repository is ready to push from the `main` branch.
+
+## GitHub Push
+
+If you want to push the project manually:
+
+```bash
+git add .
+git commit -m "Prepare project for GitHub"
+git push origin main
+```
