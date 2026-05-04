@@ -35,22 +35,22 @@ function buildWhatsAppMessage(customer, cart, total) {
 
 function CartDrawer({
   cart,
-  customerName,
-  onCustomerNameChange,
   onClose,
   onProceed,
   removeFromCart,
   updateQty,
   total,
+  language = "ar",
 }) {
   return (
-    <>
+    <div dir={language === "ar" ? "rtl" : "ltr"} className="flex h-full flex-col">
       <div className="flex justify-between items-center px-5 py-4 border-b">
         <h2 className="text-xl font-extrabold tracking-tight">
-          Cart
+          {language === "ar" ? "السلة" : "Cart"}
           {cart.length > 0 && (
             <span className="ml-2 text-sm font-normal text-gray-400">
-              ({cart.reduce((sum, item) => sum + item.qty, 0)} items)
+              ({cart.reduce((sum, item) => sum + item.qty, 0)}{" "}
+              {language === "ar" ? "منتج" : "items"})
             </span>
           )}
         </h2>
@@ -62,22 +62,12 @@ function CartDrawer({
         </button>
       </div>
 
-      <div className="px-5 pt-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          اسم العميل
-        </label>
-        <input
-          value={customerName}
-          onChange={(event) => onCustomerNameChange(event.target.value)}
-          placeholder="مثال: فلان"
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-black"
-        />
-      </div>
-
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
-            <p className="font-medium">Your cart is empty</p>
+            <p className="font-medium">
+              {language === "ar" ? "السلة فارغة" : "Your cart is empty"}
+            </p>
           </div>
         ) : (
           cart.map((item, index) => (
@@ -122,7 +112,7 @@ function CartDrawer({
                   onClick={() => removeFromCart(item.id)}
                   className="text-xs text-gray-400 hover:text-red-500 transition-colors duration-150"
                 >
-                  Remove
+                  {language === "ar" ? "حذف" : "Remove"}
                 </button>
               </div>
             </div>
@@ -144,7 +134,7 @@ function CartDrawer({
           </button>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -360,7 +350,40 @@ function InvoicePage({
   );
 }
 
-export default function Cart({ cart, onClose, removeFromCart, updateQty }) {
+function SuccessPage({ onClose }) {
+  return (
+    <div className="min-h-full bg-[#f7f1eb]">
+      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4 py-8">
+        <div className="w-full rounded-[28px] bg-white p-8 text-center shadow-sm ring-1 ring-black/5">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-600">
+            ✓
+          </div>
+          <h2 className="mt-5 text-2xl font-black text-gray-900">
+            تم إرسال طلبك بنجاح
+          </h2>
+          <p className="mt-3 text-sm text-gray-600">
+            تم تأكيد الطلب وإفراغ السلة. سيتم فتح واتساب لإكمال الإرسال مباشرة.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-6 rounded-2xl bg-black px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Cart({
+  cart,
+  onClose,
+  removeFromCart,
+  updateQty,
+  clearCart,
+  language = "ar",
+}) {
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState("cart");
   const [customer, setCustomer] = useState({
@@ -437,6 +460,8 @@ export default function Cart({ cart, onClose, removeFromCart, updateQty }) {
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
         message
       )}`;
+      clearCart?.();
+      setStep("success");
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       console.error("Failed to create order:", error);
@@ -454,7 +479,10 @@ export default function Cart({ cart, onClose, removeFromCart, updateQty }) {
         transition: "background 0.3s",
       }}
       onClick={(event) => {
-        if (step === "cart" && event.target === event.currentTarget) {
+        if (
+          (step === "cart" || step === "success") &&
+          event.target === event.currentTarget
+        ) {
           handleClose();
         }
       }}
@@ -474,8 +502,12 @@ export default function Cart({ cart, onClose, removeFromCart, updateQty }) {
             onClose={handleClose}
           />
         </div>
+      ) : step === "success" ? (
+        <div className="min-h-full">
+          <SuccessPage onClose={handleClose} />
+        </div>
       ) : (
-        <div className="flex h-full justify-end">
+        <div className="absolute inset-y-0 right-0 flex h-full" dir="ltr">
           <div
             className="bg-white h-full w-96 max-w-full flex flex-col shadow-2xl"
             style={{
@@ -485,13 +517,12 @@ export default function Cart({ cart, onClose, removeFromCart, updateQty }) {
           >
             <CartDrawer
               cart={cart}
-              customerName={customer.name}
-              onCustomerNameChange={(value) => handleCustomerChange("name", value)}
               onClose={handleClose}
               onProceed={handleProceed}
               removeFromCart={removeFromCart}
               updateQty={updateQty}
               total={total}
+              language={language}
             />
           </div>
         </div>

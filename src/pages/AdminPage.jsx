@@ -1,22 +1,10 @@
 import { useState } from "react";
-
-const CATEGORIES = [
-  "Women",
-  "Men",
-  "Kids",
-  "New In",
-  "Sale",
-  "Accessories",
-  "Shoes",
-  "Home & Living",
-];
-const TAGS = ["", "Bestseller", "New", "Sale"];
-
-const TAG_COLORS = {
-  Bestseller: "bg-orange-500",
-  New: "bg-blue-500",
-  Sale: "bg-red-500",
-};
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_TAGS,
+  TAG_COLORS,
+  normalizeSearchText,
+} from "../data/shop";
 
 const EMPTY_FORM = { name: "", price: "", category: "Men", tag: "", img: "" };
 
@@ -36,20 +24,27 @@ export default function AdminPage({
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [toast, setToast] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const normalizedSearch = normalizeSearchText(search);
+
+  const filtered = products.filter((product) => {
+    const matchesSearch =
+      !normalizedSearch ||
+      normalizeSearchText(product.name).includes(normalizedSearch);
+    const matchesCategory =
+      filterCat === "All" || product.category === filterCat;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const deleteCandidate = products.find(
+    (product) => String(product.id) === String(deleteConfirm)
+  );
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     window.clearTimeout(showToast.timeoutId);
     showToast.timeoutId = window.setTimeout(() => setToast(null), 2500);
   };
-
-  const filtered = products.filter((product) => {
-    const matchSearch = product.name
-      .toLowerCase()
-      .includes(search.toLowerCase().trim());
-    const matchCat = filterCat === "All" || product.category === filterCat;
-    return matchSearch && matchCat;
-  });
 
   const resetForm = () => {
     setForm(EMPTY_FORM);
@@ -136,12 +131,12 @@ export default function AdminPage({
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="bg-black text-white px-8 py-5 flex items-center justify-between sticky top-0 z-40 shadow-lg">
+      <div className="sticky top-0 z-40 flex items-center justify-between bg-black px-8 py-5 text-white shadow-lg">
         <div>
           <h1 className="text-xl font-extrabold tracking-widest uppercase">
             SHOP Admin Panel
           </h1>
-          <p className="text-gray-400 text-xs mt-0.5">
+          <p className="mt-0.5 text-xs text-gray-400">
             {products.length} products total
           </p>
         </div>
@@ -151,7 +146,7 @@ export default function AdminPage({
             setEditId(null);
             setForm(EMPTY_FORM);
           }}
-          className="bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-100 active:scale-95 transition-all duration-150"
+          className="rounded-full bg-white px-5 py-2 text-sm font-bold text-black transition-all duration-150 hover:bg-gray-100 active:scale-95"
         >
           Add Product
         </button>
@@ -159,7 +154,7 @@ export default function AdminPage({
 
       {toast && (
         <div
-          className={`fixed top-20 right-6 z-50 px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-xl transition-all duration-300 ${
+          className={`fixed right-6 top-20 z-50 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-xl transition-all duration-300 ${
             toast.type === "error" ? "bg-red-500" : "bg-green-500"
           }`}
         >
@@ -167,7 +162,7 @@ export default function AdminPage({
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         {error && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
             {error}
@@ -175,13 +170,13 @@ export default function AdminPage({
         )}
 
         {showForm && (
-          <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-            <h2 className="text-lg font-extrabold mb-5 text-gray-800">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md">
+            <h2 className="mb-5 text-lg font-extrabold text-gray-800">
               {editId !== null ? "Edit Product" : "Add New Product"}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Product Name
                 </label>
                 <input
@@ -190,11 +185,11 @@ export default function AdminPage({
                     setForm({ ...form, name: event.target.value })
                   }
                   placeholder="e.g. Classic Shirt"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Price
                 </label>
                 <input
@@ -206,11 +201,11 @@ export default function AdminPage({
                   type="number"
                   min="0"
                   step="0.01"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Category
                 </label>
                 <select
@@ -218,15 +213,15 @@ export default function AdminPage({
                   onChange={(event) =>
                     setForm({ ...form, category: event.target.value })
                   }
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 >
-                  {CATEGORIES.map((category) => (
+                  {PRODUCT_CATEGORIES.map((category) => (
                     <option key={category}>{category}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Tag
                 </label>
                 <select
@@ -234,9 +229,9 @@ export default function AdminPage({
                   onChange={(event) =>
                     setForm({ ...form, tag: event.target.value })
                   }
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 >
-                  {TAGS.map((tag) => (
+                  {PRODUCT_TAGS.map((tag) => (
                     <option key={tag} value={tag}>
                       {tag || "No Tag"}
                     </option>
@@ -244,7 +239,7 @@ export default function AdminPage({
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Image URL
                 </label>
                 <input
@@ -253,27 +248,27 @@ export default function AdminPage({
                     setForm({ ...form, img: event.target.value })
                   }
                   placeholder="https://..."
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 mt-5">
+            <div className="mt-5 flex gap-3">
               <button
                 onClick={handleSubmit}
                 disabled={isSaving}
-                className="bg-black text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="rounded-xl bg-black px-6 py-2.5 text-sm font-bold text-white transition-all duration-150 hover:bg-gray-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving
                   ? "Saving..."
                   : editId !== null
-                  ? "Save Changes"
-                  : "Add Product"}
+                    ? "Save Changes"
+                    : "Add Product"}
               </button>
               <button
                 onClick={resetForm}
                 disabled={isSaving}
-                className="px-6 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 active:scale-95 transition-all duration-150 disabled:opacity-60"
+                className="rounded-xl border border-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-600 transition-all duration-150 hover:bg-gray-50 active:scale-95 disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -281,26 +276,26 @@ export default function AdminPage({
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search products..."
-            className="flex-1 border border-gray-200 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
           />
           <select
             value={filterCat}
             onChange={(event) => setFilterCat(event.target.value)}
-            className="border border-gray-200 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
           >
             <option value="All">All Categories</option>
-            {CATEGORIES.map((category) => (
+            {PRODUCT_CATEGORIES.map((category) => (
               <option key={category}>{category}</option>
             ))}
           </select>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             {
               label: "Total Products",
@@ -310,35 +305,35 @@ export default function AdminPage({
             {
               label: "Showing",
               value: filtered.length,
-              color: "bg-white text-black border",
+              color: "border bg-white text-black",
             },
             {
               label: "On Sale",
               value: products.filter((product) => product.tag === "Sale").length,
-              color: "bg-red-50 text-red-600 border border-red-100",
+              color: "border border-red-100 bg-red-50 text-red-600",
             },
             {
               label: "New Arrivals",
               value: products.filter((product) => product.tag === "New").length,
-              color: "bg-blue-50 text-blue-600 border border-blue-100",
+              color: "border border-blue-100 bg-blue-50 text-blue-600",
             },
           ].map((stat) => (
             <div key={stat.label} className={`rounded-xl px-5 py-4 ${stat.color}`}>
               <p className="text-2xl font-extrabold">{stat.value}</p>
-              <p className="text-xs opacity-70 mt-0.5">{stat.label}</p>
+              <p className="mt-0.5 text-xs opacity-70">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
                 {["Product", "Category", "Price", "Tag", "Actions"].map(
                   (heading) => (
                     <th
                       key={heading}
-                      className="text-left px-5 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider"
+                      className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-gray-500"
                     >
                       {heading}
                     </th>
@@ -349,13 +344,13 @@ export default function AdminPage({
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-16 text-gray-400">
+                  <td colSpan={5} className="py-16 text-center text-gray-400">
                     Loading products...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-16 text-gray-400">
+                  <td colSpan={5} className="py-16 text-center text-gray-400">
                     No products found.
                   </td>
                 </tr>
@@ -363,15 +358,15 @@ export default function AdminPage({
                 filtered.map((product) => (
                   <tr
                     key={product.id}
-                    className="hover:bg-gray-50/60 transition-colors duration-100"
+                    className="transition-colors duration-100 hover:bg-gray-50/60"
                   >
-                    <td className="px-5 py-3 flex items-center gap-3">
+                    <td className="flex items-center gap-3 px-5 py-3">
                       <img
                         src={product.img}
                         alt={product.name}
-                        className="w-10 h-12 object-cover rounded-lg bg-gray-100"
+                        className="h-12 w-10 rounded-lg bg-gray-100 object-cover"
                       />
-                      <span className="font-semibold text-gray-800 truncate max-w-[140px]">
+                      <span className="max-w-[140px] truncate font-semibold text-gray-800">
                         {product.name}
                       </span>
                     </td>
@@ -382,12 +377,12 @@ export default function AdminPage({
                     <td className="px-5 py-3">
                       {product.tag ? (
                         <span
-                          className={`${TAG_COLORS[product.tag]} text-white text-xs font-bold px-2.5 py-0.5 rounded-full`}
+                          className={`${TAG_COLORS[product.tag]} rounded-full px-2.5 py-0.5 text-xs font-bold text-white`}
                         >
                           {product.tag}
                         </span>
                       ) : (
-                        <span className="text-gray-300 text-xs">-</span>
+                        <span className="text-xs text-gray-300">-</span>
                       )}
                     </td>
                     <td className="px-5 py-3">
@@ -395,14 +390,14 @@ export default function AdminPage({
                         <button
                           onClick={() => handleEdit(product)}
                           disabled={isSaving}
-                          className="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-150 disabled:opacity-60"
+                          className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold transition-colors duration-150 hover:bg-gray-200 disabled:opacity-60"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(product.id)}
                           disabled={isSaving}
-                          className="px-3 py-1.5 text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors duration-150 disabled:opacity-60"
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition-colors duration-150 hover:bg-red-100 disabled:opacity-60"
                         >
                           Delete
                         </button>
@@ -422,29 +417,25 @@ export default function AdminPage({
           onClick={() => !isSaving && setDeleteConfirm(null)}
         >
           <div
-            className="bg-white rounded-2xl p-6 shadow-2xl w-80 max-w-[90vw]"
+            className="w-80 max-w-[90vw] rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="font-extrabold text-lg mb-1">Delete Product?</h3>
-            <p className="text-gray-500 text-sm mb-5">
-              "
-              {products.find(
-                (product) => String(product.id) === String(deleteConfirm)
-              )?.name}
-              " will be permanently removed.
+            <h3 className="mb-1 text-lg font-extrabold">Delete Product?</h3>
+            <p className="mb-5 text-sm text-gray-500">
+              "{deleteCandidate?.name ?? "Product"}" will be permanently removed.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 disabled={isSaving}
-                className="flex-1 bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-red-600 active:scale-95 transition-all duration-150 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-bold text-white transition-all duration-150 hover:bg-red-600 active:scale-95 disabled:opacity-60"
               >
                 {isSaving ? "Deleting..." : "Delete"}
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
                 disabled={isSaving}
-                className="flex-1 border border-gray-200 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 active:scale-95 transition-all duration-150 disabled:opacity-60"
+                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 transition-all duration-150 hover:bg-gray-50 active:scale-95 disabled:opacity-60"
               >
                 Cancel
               </button>

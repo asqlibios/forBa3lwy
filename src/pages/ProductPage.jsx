@@ -1,77 +1,83 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { TAG_COLORS } from "../data/shop";
 
 const PRODUCT_SPECS = {
-  1: { // Classic Shirt
+  1: {
     sizes: [
       { label: "XS", chest: 84, length: 66, shoulder: 40 },
-      { label: "S",  chest: 88, length: 68, shoulder: 42 },
-      { label: "M",  chest: 96, length: 71, shoulder: 44 },
-      { label: "L",  chest: 104, length: 74, shoulder: 46 },
+      { label: "S", chest: 88, length: 68, shoulder: 42 },
+      { label: "M", chest: 96, length: 71, shoulder: 44 },
+      { label: "L", chest: 104, length: 74, shoulder: 46 },
       { label: "XL", chest: 112, length: 77, shoulder: 48 },
     ],
     material: "100% Cotton",
     fit: "Regular Fit",
-    care: "Machine wash 30°C",
+    care: "Machine wash 30C",
     origin: "Made in Portugal",
-    description: "A timeless classic shirt crafted from breathable 100% cotton. Features a button-down collar and chest pocket. Perfect for casual outings or smart-casual settings.",
+    description:
+      "A timeless classic shirt crafted from breathable 100% cotton. Features a button-down collar and chest pocket.",
   },
-  2: { // Winter Jacket
+  2: {
     sizes: [
       { label: "XS", chest: 90, length: 65, shoulder: 41 },
-      { label: "S",  chest: 96, length: 67, shoulder: 43 },
-      { label: "M",  chest: 104, length: 70, shoulder: 45 },
-      { label: "L",  chest: 112, length: 73, shoulder: 47 },
+      { label: "S", chest: 96, length: 67, shoulder: 43 },
+      { label: "M", chest: 104, length: 70, shoulder: 45 },
+      { label: "L", chest: 112, length: 73, shoulder: 47 },
       { label: "XL", chest: 120, length: 76, shoulder: 49 },
     ],
     material: "Shell: 100% Polyester / Lining: 80% Down",
     fit: "Relaxed Fit",
     care: "Dry clean only",
     origin: "Made in China",
-    description: "Stay warm without sacrificing style. This winter jacket features a quilted down lining and wind-resistant outer shell. Perfect for cold urban days.",
+    description:
+      "Stay warm without sacrificing style. This winter jacket features a quilted down lining and wind-resistant outer shell.",
   },
-  3: { // Summer Dress
+  3: {
     sizes: [
       { label: "XS", chest: 80, length: 88, shoulder: 36 },
-      { label: "S",  chest: 84, length: 91, shoulder: 37 },
-      { label: "M",  chest: 92, length: 94, shoulder: 39 },
-      { label: "L",  chest: 100, length: 97, shoulder: 41 },
+      { label: "S", chest: 84, length: 91, shoulder: 37 },
+      { label: "M", chest: 92, length: 94, shoulder: 39 },
+      { label: "L", chest: 100, length: 97, shoulder: 41 },
       { label: "XL", chest: 108, length: 100, shoulder: 43 },
     ],
     material: "95% Viscose, 5% Elastane",
     fit: "Flowy Fit",
     care: "Hand wash cold",
     origin: "Made in Turkey",
-    description: "Light and breezy summer dress with a floral silhouette. The viscose blend drapes beautifully and keeps you cool on warm days.",
+    description:
+      "Light and breezy summer dress with a floral silhouette. The viscose blend drapes beautifully and keeps you cool.",
   },
-  4: { // Casual Hoodie
+  4: {
     sizes: [
       { label: "XS", chest: 92, length: 64, shoulder: 43 },
-      { label: "S",  chest: 98, length: 66, shoulder: 45 },
-      { label: "M",  chest: 106, length: 69, shoulder: 47 },
-      { label: "L",  chest: 114, length: 72, shoulder: 49 },
+      { label: "S", chest: 98, length: 66, shoulder: 45 },
+      { label: "M", chest: 106, length: 69, shoulder: 47 },
+      { label: "L", chest: 114, length: 72, shoulder: 49 },
       { label: "XL", chest: 122, length: 75, shoulder: 51 },
     ],
     material: "80% Cotton, 20% Polyester",
     fit: "Oversized Fit",
-    care: "Machine wash 40°C",
+    care: "Machine wash 40C",
     origin: "Made in Bangladesh",
-    description: "Ultra-soft fleece-lined hoodie for ultimate comfort. Features a kangaroo pocket and adjustable drawstring hood. Your go-to layer for lazy weekends.",
+    description:
+      "Ultra-soft fleece-lined hoodie for comfort. Features a kangaroo pocket and adjustable drawstring hood.",
   },
-  5: { // Slim Pants
+  5: {
     sizes: [
       { label: "XS", waist: 64, hip: 88, inseam: 76 },
-      { label: "S",  waist: 68, hip: 92, inseam: 77 },
-      { label: "M",  waist: 74, hip: 98, inseam: 78 },
-      { label: "L",  waist: 80, hip: 104, inseam: 79 },
+      { label: "S", waist: 68, hip: 92, inseam: 77 },
+      { label: "M", waist: 74, hip: 98, inseam: 78 },
+      { label: "L", waist: 80, hip: 104, inseam: 79 },
       { label: "XL", waist: 86, hip: 110, inseam: 80 },
     ],
     material: "98% Cotton, 2% Elastane",
     fit: "Slim Fit",
-    care: "Machine wash 30°C",
+    care: "Machine wash 30C",
     origin: "Made in Portugal",
-    description: "Modern slim-cut trousers with a hint of stretch for ease of movement. Clean lines and a tapered leg make these perfect for both office and evening wear.",
+    description:
+      "Modern slim-cut trousers with a hint of stretch for ease of movement.",
   },
-  6: { // Sneakers
+  6: {
     sizes: [
       { label: "EU 36", length: 23.0, width: 8.8 },
       { label: "EU 37", length: 23.7, width: 9.0 },
@@ -85,55 +91,56 @@ const PRODUCT_SPECS = {
     fit: "True to size",
     care: "Wipe with damp cloth",
     origin: "Made in Vietnam",
-    description: "Clean and versatile low-top sneakers with a cushioned insole. The leather upper ages beautifully over time. Pairs effortlessly with jeans or casual trousers.",
+    description:
+      "Clean and versatile low-top sneakers with a cushioned insole and durable leather upper.",
   },
-  7: { // Handbag
-    sizes: [
-      { label: "One Size", width: 30, height: 22, depth: 12 },
-    ],
+  7: {
+    sizes: [{ label: "One Size", width: 30, height: 22, depth: 12 }],
     material: "PU Leather / Canvas Lining",
-    fit: "Adjustable strap: 60–120 cm",
+    fit: "Adjustable strap: 60-120 cm",
     care: "Wipe with dry cloth",
     origin: "Made in Italy",
-    description: "Structured everyday handbag with a spacious main compartment, interior zip pocket, and two slip pockets. The magnetic clasp closure keeps everything secure.",
+    description:
+      "Structured everyday handbag with a spacious compartment and secure magnetic clasp closure.",
   },
-  8: { // Sunglasses
-    sizes: [
-      { label: "One Size", lens: 5.2, bridge: 1.8, arm: 14.5 },
-    ],
+  8: {
+    sizes: [{ label: "One Size", lens: 5.2, bridge: 1.8, arm: 14.5 }],
     material: "Frame: Acetate / Lens: UV400 Polycarbonate",
     fit: "Medium face fit",
     care: "Use microfibre cloth",
     origin: "Made in Italy",
-    description: "Timeless square-frame sunglasses with full UV400 protection. The acetate frame is lightweight and durable. Includes hard case and cleaning cloth.",
+    description:
+      "Timeless square-frame sunglasses with full UV400 protection and lightweight construction.",
   },
-  9: { // Denim Jacket
+  9: {
     sizes: [
       { label: "XS", chest: 88, length: 55, shoulder: 40 },
-      { label: "S",  chest: 94, length: 57, shoulder: 42 },
-      { label: "M",  chest: 102, length: 60, shoulder: 44 },
-      { label: "L",  chest: 110, length: 63, shoulder: 46 },
+      { label: "S", chest: 94, length: 57, shoulder: 42 },
+      { label: "M", chest: 102, length: 60, shoulder: 44 },
+      { label: "L", chest: 110, length: 63, shoulder: 46 },
       { label: "XL", chest: 118, length: 66, shoulder: 48 },
     ],
     material: "100% Cotton Denim (12 oz)",
     fit: "Regular Fit",
     care: "Machine wash cold, inside out",
     origin: "Made in Mexico",
-    description: "Classic raw-edge denim jacket with brass button closures and two chest flap pockets. The medium wash finish pairs well with almost everything.",
+    description:
+      "Classic raw-edge denim jacket with brass button closures and a versatile medium wash finish.",
   },
-  10: { // Maxi Skirt
+  10: {
     sizes: [
       { label: "XS", waist: 62, hip: 86, length: 98 },
-      { label: "S",  waist: 66, hip: 90, length: 100 },
-      { label: "M",  waist: 72, hip: 96, length: 102 },
-      { label: "L",  waist: 78, hip: 102, length: 104 },
+      { label: "S", waist: 66, hip: 90, length: 100 },
+      { label: "M", waist: 72, hip: 96, length: 102 },
+      { label: "L", waist: 78, hip: 102, length: 104 },
       { label: "XL", waist: 84, hip: 108, length: 106 },
     ],
     material: "100% Satin Polyester",
     fit: "High-waist, Flared",
     care: "Hand wash cold, do not tumble dry",
     origin: "Made in Turkey",
-    description: "Elegant floor-length satin skirt with a high-waisted silhouette and subtle sheen. The fluid fabric moves beautifully. Available in a pull-on elasticated waist.",
+    description:
+      "Elegant floor-length satin skirt with a subtle sheen and fluid silhouette.",
   },
 };
 
@@ -152,18 +159,90 @@ const SPEC_KEYS = {
   arm: "Arm Length",
 };
 
-export default function ProductPage({ product, onBack, addToCart, inCart }) {
+const TEXT = {
+  ar: {
+    back: "العودة للمتجر",
+    inCart: "في السلة",
+    material: "الخامة",
+    fit: "القياس",
+    care: "العناية",
+    selectSize: "اختر المقاس",
+    selectSizeHint: "يرجى اختيار المقاس",
+    sizeChart: "جدول المقاسات (سم)",
+    size: "المقاس",
+    measurementsHint: "كل القياسات بالسنتيمتر. اضغط على السطر لاختيار المقاس.",
+    total: "الإجمالي",
+    addToCart: "أضف إلى السلة",
+    addedToCart: "تمت الإضافة إلى السلة",
+    notAvailable: "غير متوفر",
+    tags: {
+      Bestseller: "الأكثر طلبًا",
+      New: "جديد",
+      Sale: "عرض",
+    },
+  },
+  en: {
+    back: "Back to Shop",
+    inCart: "In Cart",
+    material: "Material",
+    fit: "Fit",
+    care: "Care",
+    selectSize: "Select Size",
+    selectSizeHint: "Please select a size",
+    sizeChart: "Size Chart (cm)",
+    size: "Size",
+    measurementsHint:
+      "All measurements are in centimeters. Click a row to select that size.",
+    total: "total",
+    addToCart: "Add to Cart",
+    addedToCart: "Added to Cart!",
+    notAvailable: "N/A",
+    tags: {
+      Bestseller: "Bestseller",
+      New: "New",
+      Sale: "Sale",
+    },
+  },
+};
+
+const SPEC_KEY_LABELS = {
+  ar: {
+    chest: "الصدر",
+    length: "الطول",
+    shoulder: "الكتف",
+    waist: "الخصر",
+    hip: "الأرداف",
+    inseam: "طول الساق",
+    width: "العرض",
+    height: "الارتفاع",
+    depth: "العمق",
+    lens: "عرض العدسة",
+    bridge: "الجسر",
+    arm: "طول الذراع",
+  },
+  en: SPEC_KEYS,
+};
+
+export default function ProductPage({
+  product,
+  onBack,
+  addToCart,
+  inCart,
+  language = "ar",
+}) {
   const [selectedSize, setSelectedSize] = useState(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [visible, setVisible] = useState(false);
+  const copy = TEXT[language] || TEXT.ar;
+  const specLabels = SPEC_KEY_LABELS[language] || SPEC_KEY_LABELS.ar;
 
   const specs = PRODUCT_SPECS[product.id] || {
     sizes: [{ label: "One Size" }],
-    material: "N/A",
-    fit: "N/A",
-    care: "N/A",
-    origin: "N/A",
+    material: copy.notAvailable,
+    fit: copy.notAvailable,
+    care: copy.notAvailable,
+    origin: copy.notAvailable,
     description: product.name,
   };
 
@@ -196,75 +275,89 @@ export default function ProductPage({ product, onBack, addToCart, inCart }) {
         transition: "opacity 0.3s ease, transform 0.3s ease",
       }}
     >
-      {/* Breadcrumb / Back */}
-      <div className="max-w-7xl mx-auto px-6 py-5 flex items-center gap-2 text-sm text-gray-500">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 py-5 text-sm text-gray-500">
         <button
           onClick={handleBack}
-          className="flex items-center gap-1.5 hover:text-black transition-colors duration-150 font-medium group"
+          className="group flex items-center gap-1.5 font-medium transition-colors duration-150 hover:text-black"
         >
-          <span className="text-lg transition-transform duration-200 group-hover:-translate-x-1">←</span>
-          Back to Shop
+          <span className="text-lg transition-transform duration-200 group-hover:-translate-x-1">
+            {language === "ar" ? "→" : "←"}
+          </span>
+          {copy.back}
         </button>
         <span>/</span>
-        <span className="text-black font-semibold">{product.name}</span>
+        <span className="font-semibold text-black">{product.name}</span>
       </div>
 
-      {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-6 pb-20 grid grid-cols-1 md:grid-cols-2 gap-12">
-
-        {/* LEFT — Image */}
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 pb-20 md:grid-cols-2">
         <div className="relative">
-          <div className="rounded-2xl overflow-hidden bg-gray-100 shadow-lg" style={{ aspectRatio: "4/5" }}>
+          <div
+            className="overflow-hidden rounded-2xl bg-gray-100 shadow-lg"
+            style={{ aspectRatio: "4/5" }}
+          >
             <img
               src={product.img}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
           </div>
           {product.tag && (
-            <span className={`absolute top-4 left-4 text-white text-sm font-bold px-3 py-1 rounded-full
-              ${product.tag === "Bestseller" ? "bg-orange-500" : product.tag === "New" ? "bg-blue-500" : "bg-red-500"}`}>
-              {product.tag}
+            <span
+              className={`absolute left-4 top-4 rounded-full px-3 py-1 text-sm font-bold text-white ${TAG_COLORS[product.tag]}`}
+            >
+              {copy.tags[product.tag] || product.tag}
             </span>
           )}
           {inCart && (
-            <span className="absolute top-4 right-4 bg-green-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-              ✓ In Cart
+            <span className="absolute right-4 top-4 rounded-full bg-green-500 px-3 py-1 text-sm font-bold text-white">
+              {`✓ ${copy.inCart}`}
             </span>
           )}
         </div>
 
-        {/* RIGHT — Info */}
         <div className="flex flex-col gap-6 py-2">
           <div>
-            <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">{specs.origin}</p>
-            <h1 className="text-4xl font-extrabold tracking-tight leading-tight">{product.name}</h1>
-            <p className="text-3xl font-bold text-red-500 mt-2">${product.price.toFixed(2)}</p>
+            <p className="mb-1 text-xs font-bold tracking-widest text-gray-400">
+              {specs.origin}
+            </p>
+            <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
+              {product.name}
+            </h1>
+            <p className="mt-2 text-3xl font-bold text-red-500">
+              SAR {product.price.toFixed(2)}
+            </p>
           </div>
 
-          <p className="text-gray-600 leading-relaxed">{specs.description}</p>
+          <p className="leading-relaxed text-gray-600">{specs.description}</p>
 
-          {/* Details strip */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { icon: "🧵", label: "Material", value: specs.material },
-              { icon: "👕", label: "Fit", value: specs.fit },
-              { icon: "🫧", label: "Care", value: specs.care },
+              { icon: "🧵", label: copy.material, value: specs.material },
+              { icon: "👕", label: copy.fit, value: specs.fit },
+              { icon: "🫧", label: copy.care, value: specs.care },
             ].map(({ icon, label, value }) => (
-              <div key={label} className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
-                <div className="text-xl mb-1">{icon}</div>
-                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
-                <p className="text-xs font-medium text-gray-700 mt-0.5 leading-snug">{value}</p>
+              <div
+                key={label}
+                className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center"
+              >
+                <div className="mb-1 text-xl">{icon}</div>
+                <p className="text-xs font-semibold tracking-wide text-gray-400">
+                  {label}
+                </p>
+                <p className="mt-0.5 text-xs font-medium leading-snug text-gray-700">
+                  {value}
+                </p>
               </div>
             ))}
           </div>
 
-          {/* Size selector */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-bold text-sm uppercase tracking-wide">Select Size</p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-bold tracking-wide">{copy.selectSize}</p>
               {specs.sizes.length > 1 && !selectedSize && (
-                <p className="text-xs text-red-400 font-medium">Please select a size</p>
+                <p className="text-xs font-medium text-red-400">
+                  {copy.selectSizeHint}
+                </p>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -272,11 +365,11 @@ export default function ProductPage({ product, onBack, addToCart, inCart }) {
                 <button
                   key={s.label}
                   onClick={() => setSelectedSize(s.label)}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-semibold transition-all duration-150
-                    ${selectedSize === s.label
+                  className={`rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-all duration-150 ${
+                    selectedSize === s.label
                       ? "border-black bg-black text-white"
                       : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                    }`}
+                  }`}
                 >
                   {s.label}
                 </button>
@@ -284,17 +377,20 @@ export default function ProductPage({ product, onBack, addToCart, inCart }) {
             </div>
           </div>
 
-          {/* Size chart */}
           {sizeKeys.length > 0 && (
             <div>
-              <p className="font-bold text-sm uppercase tracking-wide mb-3">Size Chart (cm)</p>
+              <p className="mb-3 text-sm font-bold tracking-wide">
+                {copy.sizeChart}
+              </p>
               <div className="overflow-x-auto rounded-xl border border-gray-100">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 text-gray-400 text-xs font-bold uppercase tracking-wide">
-                      <th className="px-4 py-3 text-left">Size</th>
+                    <tr className="bg-gray-50 text-xs font-bold tracking-wide text-gray-400">
+                      <th className="px-4 py-3 text-left">{copy.size}</th>
                       {sizeKeys.map((k) => (
-                        <th key={k} className="px-4 py-3 text-center">{SPEC_KEYS[k] || k}</th>
+                        <th key={k} className="px-4 py-3 text-center">
+                          {specLabels[k] || k}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -303,50 +399,64 @@ export default function ProductPage({ product, onBack, addToCart, inCart }) {
                       <tr
                         key={s.label}
                         onClick={() => setSelectedSize(s.label)}
-                        className={`cursor-pointer border-t border-gray-50 transition-colors duration-100
-                          ${selectedSize === s.label ? "bg-black text-white" : i % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-50/50 hover:bg-gray-100"}`}
+                        className={`cursor-pointer border-t border-gray-50 transition-colors duration-100 ${
+                          selectedSize === s.label
+                            ? "bg-black text-white"
+                            : i % 2 === 0
+                            ? "bg-white hover:bg-gray-50"
+                            : "bg-gray-50/50 hover:bg-gray-100"
+                        }`}
                       >
                         <td className="px-4 py-3 font-bold">{s.label}</td>
                         {sizeKeys.map((k) => (
-                          <td key={k} className="px-4 py-3 text-center">{s[k]}</td>
+                          <td key={k} className="px-4 py-3 text-center">
+                            {s[k]}
+                          </td>
                         ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-gray-400 mt-2">* All measurements are in centimeters. Click a row to select that size.</p>
+              <p className="mt-2 text-xs text-gray-400">
+                * {copy.measurementsHint}
+              </p>
             </div>
           )}
 
-          {/* Qty + CTA */}
           <div className="flex items-center gap-4 pt-2">
-            <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
+            <div className="flex items-center overflow-hidden rounded-xl border-2 border-gray-200">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="w-11 h-11 flex items-center justify-center text-xl font-bold hover:bg-gray-100 transition-colors duration-150"
-              >−</button>
-              <span className="w-12 text-center font-bold text-lg">{qty}</span>
+                className="flex h-11 w-11 items-center justify-center text-xl font-bold transition-colors duration-150 hover:bg-gray-100"
+              >
+                -
+              </button>
+              <span className="w-12 text-center text-lg font-bold">{qty}</span>
               <button
                 onClick={() => setQty((q) => q + 1)}
-                className="w-11 h-11 flex items-center justify-center text-xl font-bold hover:bg-gray-100 transition-colors duration-150"
-              >+</button>
+                className="flex h-11 w-11 items-center justify-center text-xl font-bold transition-colors duration-150 hover:bg-gray-100"
+              >
+                +
+              </button>
             </div>
-            <span className="text-gray-400 text-sm font-medium">${(product.price * qty).toFixed(2)} total</span>
+            <span className="text-sm font-medium text-gray-400">
+              SAR {(product.price * qty).toFixed(2)} {copy.total}
+            </span>
           </div>
 
           <button
             onClick={handleAdd}
             disabled={specs.sizes.length > 1 && !selectedSize}
-            className={`w-full py-4 rounded-2xl font-extrabold text-base tracking-wide transition-all duration-200
-              ${added
-                ? "bg-green-500 text-white scale-95"
+            className={`w-full rounded-2xl py-4 text-base font-extrabold tracking-wide transition-all duration-200 ${
+              added
+                ? "scale-95 bg-green-500 text-white"
                 : specs.sizes.length > 1 && !selectedSize
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-black text-white hover:bg-gray-800 hover:scale-[1.02] active:scale-95"
-              }`}
+                ? "cursor-not-allowed bg-gray-200 text-gray-400"
+                : "bg-black text-white hover:scale-[1.02] hover:bg-gray-800 active:scale-95"
+            }`}
           >
-            {added ? "✓ Added to Cart!" : "Add to Cart"}
+            {added ? `✓ ${copy.addedToCart}` : copy.addToCart}
           </button>
         </div>
       </div>

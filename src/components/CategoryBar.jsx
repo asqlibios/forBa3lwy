@@ -1,21 +1,30 @@
-const CATEGORIES = ["All", "Women", "Men", "Kids", "New In", "Sale", "Accessories", "Shoes", "Home & Living"];
+import { SHOP_CATEGORIES, getCategoryLabels } from "../data/shop";
 
-export default function CategoryBar({ activeCategory = "All", onCategoryChange }) {
+export default function CategoryBar({
+  activeCategory = "All",
+  onCategoryChange,
+  language = "ar",
+}) {
+  const labels = getCategoryLabels(language);
+
   return (
-    <div className="bg-white border-b px-6 py-3 flex gap-6 overflow-x-auto text-sm font-medium sticky top-[68px] z-30 shadow-sm">
-      {CATEGORIES.map((cat) => {
-        const isActive = cat === activeCategory;
+    <div className="sticky top-[68px] z-30 flex gap-6 overflow-x-auto border-b bg-white px-6 py-3 text-sm font-medium shadow-sm">
+      {SHOP_CATEGORIES.map((category) => {
+        const isActive = category === activeCategory;
+
         return (
           <button
-            key={cat}
-            onClick={() => onCategoryChange(cat)}
-            className={`relative whitespace-nowrap transition-colors duration-200 pb-1 group
-              ${isActive ? "text-black font-bold" : "text-gray-600 hover:text-black"}`}
+            key={category}
+            onClick={() => onCategoryChange(category)}
+            className={`group relative whitespace-nowrap pb-1 transition-colors duration-200 ${
+              isActive ? "font-bold text-black" : "text-gray-600 hover:text-black"
+            }`}
           >
-            {cat}
+            {labels[category] || category}
             <span
-              className={`absolute bottom-0 left-0 h-0.5 bg-black rounded-full transition-all duration-300
-                ${isActive ? "w-full" : "w-0 group-hover:w-full"}`}
+              className={`absolute bottom-0 left-0 h-0.5 rounded-full bg-black transition-all duration-300 ${
+                isActive ? "w-full" : "w-0 group-hover:w-full"
+              }`}
             />
           </button>
         );

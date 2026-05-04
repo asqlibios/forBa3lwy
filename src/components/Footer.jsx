@@ -1,25 +1,42 @@
 const LINKS = {
-  Company: ["About Us", "Careers", "Press", "Blog"],
-  Support: ["Help Center", "Returns", "Shipping Info", "Contact Us"],
-  Legal: ["Privacy Policy", "Terms of Use", "Cookie Settings"],
+  ar: {
+    sections: {
+      الشركة: ["من نحن", "الوظائف", "الأخبار", "المدونة"],
+      الدعم: ["مركز المساعدة", "الاسترجاع", "معلومات الشحن", "تواصل معنا"],
+      القانونية: ["سياسة الخصوصية", "شروط الاستخدام", "إعدادات الكوكيز"],
+    },
+    description: "وجهتك السريعة للأزياء والمنتجات المختارة بأسعار مناسبة.",
+    rights: "© 2026 SHOP. جميع الحقوق محفوظة.",
+  },
+  en: {
+    sections: {
+      Company: ["About Us", "Careers", "Press", "Blog"],
+      Support: ["Help Center", "Returns", "Shipping Info", "Contact Us"],
+      Legal: ["Privacy Policy", "Terms of Use", "Cookie Settings"],
+    },
+    description:
+      "Your one-stop destination for fashion and curated finds at great prices.",
+    rights: "© 2026 SHOP. All rights reserved.",
+  },
 };
 
-export default function Footer() {
+export default function Footer({ language = "ar" }) {
+  const content = LINKS[language] || LINKS.ar;
+
   return (
-    <footer className="bg-black text-white mt-10">
-      <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <footer className="mt-10 bg-black text-white">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-12 md:grid-cols-4">
         <div className="col-span-2 md:col-span-1">
-          <h2 className="text-2xl font-extrabold tracking-widest mb-2">SHOP</h2>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Your one-stop destination for fashion — quality styles at unbeatable prices.
+          <h2 className="mb-2 text-2xl font-extrabold tracking-widest">SHOP</h2>
+          <p className="text-sm leading-relaxed text-gray-400">
+            {content.description}
           </p>
-          <div className="flex gap-3 mt-4">
-            {["📘", "📸", "🐦", "🎵"].map((icon, i) => (
+          <div className="mt-4 flex gap-3">
+            {["📘", "📸", "✉️", "🎵"].map((icon, i) => (
               <a
                 key={i}
                 href="#"
-                className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-sm
-                           hover:bg-white/25 hover:scale-110 transition-all duration-200"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm transition-all duration-200 hover:scale-110 hover:bg-white/25"
               >
                 {icon}
               </a>
@@ -27,9 +44,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {Object.entries(LINKS).map(([section, items]) => (
+        {Object.entries(content.sections).map(([section, items]) => (
           <div key={section}>
-            <h3 className="font-bold text-sm uppercase tracking-wider mb-4 text-gray-300">
+            <h3 className="mb-4 text-sm font-bold tracking-wider text-gray-300">
               {section}
             </h3>
             <ul className="space-y-2">
@@ -37,7 +54,7 @@ export default function Footer() {
                 <li key={link}>
                   <a
                     href="#"
-                    className="text-gray-400 text-sm hover:text-white transition-colors duration-150 hover:underline underline-offset-2"
+                    className="text-sm text-gray-400 transition-colors duration-150 hover:text-white hover:underline underline-offset-2"
                   >
                     {link}
                   </a>
@@ -48,8 +65,8 @@ export default function Footer() {
         ))}
       </div>
 
-      <div className="border-t border-white/10 text-center text-gray-500 text-sm py-5">
-        © 2026 SHOP. All rights reserved.
+      <div className="border-t border-white/10 py-5 text-center text-sm text-gray-500">
+        {content.rights}
       </div>
     </footer>
   );

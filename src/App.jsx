@@ -9,6 +9,7 @@ import AdminPage from "./pages/AdminPage";
 import AdminOrders from "./pages/AdminOrders";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import { PRODUCTS as INITIAL_PRODUCTS } from "./data/products";
+import { productMatchesQuery } from "./data/shop";
 import {
   signInAdmin,
   signOutAdmin,
@@ -27,6 +28,11 @@ import {
   seedProductsIfEmpty,
 } from "./services/products";
 
+const ORDERS_LAST_SEEN_KEY = "adminOrdersLastSeenAt";
+const LANGUAGE_KEY = "shopLanguage";
+const DEFAULT_SEARCH_CATEGORY = "All";
+const DEFAULT_SORT_OPTION = "relevance";
+
 function getRouteFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
   const productMatch = path.match(/^\/product\/([^/]+)$/);
@@ -39,8 +45,13 @@ function getRouteFromLocation() {
 }
 
 export default function App() {
-  const ORDERS_LAST_SEEN_KEY = "adminOrdersLastSeenAt";
   const [cart, setCart] = useState([]);
+  const [language, setLanguage] = useState(
+    () => localStorage.getItem(LANGUAGE_KEY) || "ar"
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchCategory, setSearchCategory] = useState(DEFAULT_SEARCH_CATEGORY);
+  const [sortOption, setSortOption] = useState(DEFAULT_SORT_OPTION);
   const [activeCategory, setActiveCategory] = useState("All");
   const [page, setPage] = useState("shop");
   const [adminSection, setAdminSection] = useState("products");
@@ -63,6 +74,12 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(LANGUAGE_KEY, language);
+    document.documentElement.lang = language === "ar" ? "ar" : "en";
+    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+  }, [language]);
 
   useEffect(() => {
     const unsubscribe = subscribeToAdminAuth((user) => {
@@ -94,11 +111,15 @@ export default function App() {
         console.error("Failed to load products from Firestore:", error);
 
         if (isMounted) {
-          setProducts(INITIAL_PRODUCTS.map((product) => ({
-            ...product,
-            id: String(product.id),
-          })));
-          setProductsError("Unable to reach Firebase. Showing local products for now.");
+          setProducts(
+            INITIAL_PRODUCTS.map((product) => ({
+              ...product,
+              id: String(product.id),
+            }))
+          );
+          setProductsError(
+            "Unable to reach Firebase. Showing local products for now."
+          );
         }
       } finally {
         if (isMounted) {
@@ -156,18 +177,92 @@ export default function App() {
   };
 
   const selectedProduct = useMemo(() => {
-    if (route.name !== "product") return null;
+    if (route.name !== "product") {
+      return null;
+    }
 
     return products.find(
       (product) => String(product.id) === String(route.productId)
     );
   }, [products, route]);
 
+  const hasSearch = searchTerm.trim().length > 0;
+
+  const searchResults = useMemo(
+    () => products.filter((product) => productMatchesQuery(product, searchTerm)),
+    [products, searchTerm]
+  );
+
+  const searchCategories = useMemo(() => {
+    const categories = new Set(
+      searchResults.map((product) => product.category).filter(Boolean)
+    );
+
+    return [DEFAULT_SEARCH_CATEGORY, ...categories];
+  }, [searchResults]);
+  const effectiveSearchCategory =
+    hasSearch && searchCategories.includes(searchCategory)
+      ? searchCategory
+      : DEFAULT_SEARCH_CATEGORY;
+  const effectiveSortOption = hasSearch ? sortOption : DEFAULT_SORT_OPTION;
+
+  const filteredProducts = useMemo(() => {
+    const baseProducts = hasSearch
+      ? searchResults.filter(
+          (product) =>
+            effectiveSearchCategory === DEFAULT_SEARCH_CATEGORY ||
+            product.category === effectiveSearchCategory
+        )
+      : products.filter(
+          (product) =>
+            activeCategory === "All" || product.category === activeCategory
+        );
+
+    if (!hasSearch || effectiveSortOption === DEFAULT_SORT_OPTION) {
+      return baseProducts;
+    }
+
+    const sorted = [...baseProducts];
+
+    if (effectiveSortOption === "price-asc") {
+      sorted.sort((a, b) => Number(a.price) - Number(b.price));
+      return sorted;
+    }
+
+    if (effectiveSortOption === "price-desc") {
+      sorted.sort((a, b) => Number(b.price) - Number(a.price));
+      return sorted;
+    }
+
+    if (effectiveSortOption === "newest") {
+      sorted.sort((a, b) => {
+        const aScore = a.tag === "New" ? 1 : 0;
+        const bScore = b.tag === "New" ? 1 : 0;
+
+        if (aScore !== bScore) {
+          return bScore - aScore;
+        }
+
+        return Number(b.id) - Number(a.id);
+      });
+    }
+
+    return sorted;
+  }, [
+    activeCategory,
+    hasSearch,
+    products,
+    effectiveSearchCategory,
+    effectiveSortOption,
+    searchResults,
+  ]);
+
   const addToCart = (product, qty) => {
     setCart((prev) => {
       const exists = prev.find(
         (item) => String(item.id) === String(product.id)
       );
+
       if (exists) {
         return prev.map((item) =>
           String(item.id) === String(product.id)
@@ -181,9 +276,11 @@ export default function App() {
   };
 
   const removeFromCart = (id) => {
-    setCart((prev) =>
-      prev.filter((item) => String(item.id) !== String(id))
-    );
+    setCart((prev) => prev.filter((item) => String(item.id) !== String(id)));
+  };
+
+  const clearCart = () => {
+    setCart([]);
   };
 
   const updateQty = (id, qty) => {
@@ -274,7 +371,10 @@ export default function App() {
   if (page === "admin") {
     if (isCheckingAdminAuth) {
       return (
-        <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+        <div
+          dir="ltr"
+          className="flex min-h-screen items-center justify-center bg-gray-950 text-white"
+        >
           <p className="text-gray-300">Checking admin session...</p>
         </div>
       );
@@ -282,19 +382,21 @@ export default function App() {
 
     if (!adminUser) {
       return (
-        <AdminLoginPage
-          onLogin={handleAdminLogin}
-          onBack={() => {
-            setPage("shop");
-            backToShop();
-          }}
-          isCheckingAuth={isCheckingAdminAuth}
-        />
+        <div dir="ltr">
+          <AdminLoginPage
+            onLogin={handleAdminLogin}
+            onBack={() => {
+              setPage("shop");
+              backToShop();
+            }}
+            isCheckingAuth={isCheckingAdminAuth}
+          />
+        </div>
       );
     }
 
     return (
-      <div>
+      <div dir="ltr">
         <div className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <div>
@@ -319,8 +421,8 @@ export default function App() {
                 {notificationsEnabled
                   ? "Notifications On"
                   : notificationsBusy
-                  ? "Enabling..."
-                  : "Enable Notifications"}
+                    ? "Enabling..."
+                    : "Enable Notifications"}
               </button>
               <button
                 onClick={() => setAdminSection("products")}
@@ -364,13 +466,13 @@ export default function App() {
           <button
             onClick={handleAdminLogout}
             disabled={isSigningOut}
-            className="bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-full shadow-xl text-sm font-bold hover:bg-gray-50 active:scale-95 transition-all duration-150 disabled:opacity-60"
+            className="rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-xl transition-all duration-150 hover:bg-gray-50 active:scale-95 disabled:opacity-60"
           >
             {isSigningOut ? "Signing Out..." : "Logout"}
           </button>
           <button
             onClick={() => setPage("shop")}
-            className="bg-black text-white px-5 py-3 rounded-full shadow-xl text-sm font-bold hover:bg-gray-800 active:scale-95 transition-all duration-150"
+            className="rounded-full bg-black px-5 py-3 text-sm font-bold text-white shadow-xl transition-all duration-150 hover:bg-gray-800 active:scale-95"
           >
             Back to Shop
           </button>
@@ -393,48 +495,63 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className="min-h-screen bg-gray-50"
+      dir={language === "ar" ? "rtl" : "ltr"}
+    >
       <Navbar
         cart={cart}
         removeFromCart={removeFromCart}
         updateQty={updateQty}
+        clearCart={clearCart}
+        language={language}
+        onLanguageChange={setLanguage}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
       />
 
       {productsError && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-sm text-amber-800 text-center">
+        <div className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-center text-sm text-amber-800">
           {productsError}
         </div>
       )}
 
       {route.name === "product" && isLoadingProducts ? (
-        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
-          <p className="text-gray-500">Loading product...</p>
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <p className="text-gray-500">
+            {language === "ar" ? "جاري تحميل المنتج..." : "Loading product..."}
+          </p>
         </div>
       ) : route.name === "product" && selectedProduct ? (
         <ProductPage
           product={selectedProduct}
           onBack={backToShop}
           addToCart={addToCart}
+          language={language}
           inCart={cart.some(
             (item) => String(item.id) === String(selectedProduct.id)
           )}
         />
       ) : route.name === "product" ? (
-        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-gray-400 mb-3">
-            Product Not Found
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <p className="mb-3 text-sm tracking-[0.3em] text-gray-400">
+            {language === "ar" ? "المنتج غير موجود" : "Product Not Found"}
           </p>
-          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-3">
-            This product is no longer available.
+          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-gray-900">
+            {language === "ar"
+              ? "هذا المنتج لم يعد متاحًا."
+              : "This product is no longer available."}
           </h2>
-          <p className="text-gray-500 mb-8">
-            The item may have been removed or the link is incorrect.
+          <p className="mb-8 text-gray-500">
+            {language === "ar"
+              ? "قد يكون المنتج قد حُذف أو أن الرابط غير صحيح."
+              : "The item may have been removed or the link is incorrect."}
           </p>
           <button
             onClick={backToShop}
-            className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors"
+            className="rounded-full bg-black px-6 py-3 font-semibold text-white transition-colors hover:bg-gray-800"
           >
-            Back to Shop
+            {language === "ar" ? "العودة للمتجر" : "Back to Shop"}
           </button>
         </div>
       ) : (
@@ -442,19 +559,29 @@ export default function App() {
           <CategoryBar
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
+            language={language}
           />
 
-          {activeCategory === "All" && <Hero />}
+          {activeCategory === "All" && !searchTerm.trim() && (
+            <Hero language={language} />
+          )}
 
           <Products
             cart={cart}
             onProductClick={openProductPage}
             activeCategory={activeCategory}
-            products={products}
+            products={filteredProducts}
             isLoading={isLoadingProducts}
+            language={language}
+            searchTerm={searchTerm}
+            searchCategories={searchCategories}
+            searchCategory={effectiveSearchCategory}
+            onSearchCategoryChange={setSearchCategory}
+            sortOption={effectiveSortOption}
+            onSortOptionChange={setSortOption}
           />
 
-          <Footer />
+          <Footer language={language} />
         </>
       )}
 
@@ -464,7 +591,7 @@ export default function App() {
             backToShop();
             setPage("admin");
           }}
-          className="relative bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-full shadow-lg text-xs font-bold hover:bg-gray-50 active:scale-95 transition-all duration-150"
+          className="relative rounded-full border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-700 shadow-lg transition-all duration-150 hover:bg-gray-50 active:scale-95"
         >
           Admin
           {ordersUnreadCount > 0 && (
