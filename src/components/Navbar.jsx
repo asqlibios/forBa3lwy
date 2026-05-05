@@ -21,9 +21,11 @@ export default function Navbar({
   onThemeToggle,
   onOpenAdmin,
   onOpenCart,
+  searchFocusToken = 0,
 }) {
   const [openSettings, setOpenSettings] = useState(false);
   const settingsRef = useRef(null);
+  const searchInputRef = useRef(null);
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
   const isDark = theme === "dark";
 
@@ -41,25 +43,36 @@ export default function Navbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (searchFocusToken > 0) {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [searchFocusToken]);
+
   const closeSettings = () => setOpenSettings(false);
 
   return (
     <>
       <nav
-        className="sticky top-0 z-40 flex flex-wrap items-center gap-4 bg-black px-6 py-4 text-white"
+        className="sticky top-0 z-40 flex flex-nowrap items-center gap-2 bg-black px-3 py-3 text-white sm:gap-4 sm:px-6 sm:py-4"
         style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.4)" }}
         dir="ltr"
       >
         <h1
-          className="shrink-0 text-2xl font-bold tracking-widest uppercase"
-          style={{ letterSpacing: "0.2em" }}
+          className="shrink-0 text-lg font-bold tracking-widest uppercase sm:text-2xl"
+          style={{ letterSpacing: "0.16em" }}
         >
           SHOP
         </h1>
 
-        <div className="min-w-[220px] flex-1 sm:min-w-[280px]">
+        <div className="min-w-0 flex-1 sm:min-w-[280px]">
           <label className="group relative block">
             <input
+              ref={searchInputRef}
               type="search"
               value={searchTerm}
               onChange={(event) => onSearchChange?.(event.target.value)}
@@ -72,7 +85,7 @@ export default function Navbar({
                   : "Search by name or category"
               }
               dir={language === "ar" ? "rtl" : "ltr"}
-              className="h-11 w-full rounded-full border border-white/15 bg-white/10 text-sm text-white outline-none transition-all duration-300 placeholder:text-white/35 hover:-translate-y-0.5 hover:border-white/35 hover:bg-white/14 hover:shadow-[0_10px_24px_rgba(255,255,255,0.08)] focus:-translate-y-0.5 focus:border-white/55 focus:bg-white/16 focus:shadow-[0_14px_30px_rgba(255,255,255,0.12)]"
+              className="h-9 w-full rounded-full border border-white/15 bg-white/10 text-xs text-white outline-none transition-all duration-300 placeholder:text-white/35 hover:border-white/35 hover:bg-white/14 focus:border-white/55 focus:bg-white/16 sm:h-11 sm:text-sm sm:hover:-translate-y-0.5 sm:hover:shadow-[0_10px_24px_rgba(255,255,255,0.08)] sm:focus:-translate-y-0.5 sm:focus:shadow-[0_14px_30px_rgba(255,255,255,0.12)]"
               style={{
                 paddingLeft: language === "ar" ? "1rem" : "3rem",
                 paddingRight: language === "ar" ? "3rem" : "1rem",
@@ -89,13 +102,13 @@ export default function Navbar({
           </label>
         </div>
 
-        <div className="relative ml-auto" ref={settingsRef}>
+        <div className="relative shrink-0" ref={settingsRef}>
           <button
             type="button"
             onClick={() => setOpenSettings((value) => !value)}
             aria-label={language === "ar" ? "الإعدادات" : "Settings"}
             aria-expanded={openSettings}
-            className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-bold text-black transition-all duration-200 hover:scale-105 hover:bg-gray-100 active:scale-95"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white text-base font-bold text-black transition-all duration-200 hover:scale-105 hover:bg-gray-100 active:scale-95 sm:h-11 sm:w-11 sm:text-xl"
           >
             ⚙
             {totalItems > 0 && (

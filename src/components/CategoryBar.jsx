@@ -8,7 +8,7 @@ export default function CategoryBar({
   const labels = getCategoryLabels(language);
 
   return (
-    <div className="sticky top-[68px] z-30 flex gap-6 overflow-x-auto border-b bg-white px-6 py-3 text-sm font-medium shadow-sm">
+    <div className="sticky top-[60px] z-30 flex gap-5 overflow-x-auto border-b bg-white px-4 py-2.5 text-sm font-medium shadow-sm sm:top-[76px] sm:gap-6 sm:px-6 sm:py-3">
       {SHOP_CATEGORIES.map((category) => {
         const isActive = category === activeCategory;
 

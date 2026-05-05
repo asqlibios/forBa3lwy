@@ -65,6 +65,7 @@ function getRouteFromLocation() {
 export default function App() {
   const [cart, setCart] = useState([]);
   const [openCart, setOpenCart] = useState(false);
+  const [searchFocusToken, setSearchFocusToken] = useState(0);
   const [language, setLanguage] = useState(
     () => localStorage.getItem(LANGUAGE_KEY) || "ar"
   );
@@ -604,7 +605,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-gray-50 pb-20 sm:pb-0"
       dir={language === "ar" ? "rtl" : "ltr"}
     >
       <Navbar
@@ -624,6 +625,7 @@ export default function App() {
           setPage("admin");
         }}
         onOpenCart={() => setOpenCart(true)}
+        searchFocusToken={searchFocusToken}
       />
 
       {productsError && (
@@ -709,7 +711,7 @@ export default function App() {
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setOpenCart(true)}
-          className="relative rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-xl transition-all duration-150 hover:bg-gray-50 active:scale-95"
+          className="relative hidden rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-xl transition-all duration-150 hover:bg-gray-50 active:scale-95 sm:inline-flex"
         >
           {language === "ar" ? "السلة" : "Cart"}
           {cart.reduce((sum, item) => sum + item.qty, 0) > 0 && (
@@ -718,6 +720,50 @@ export default function App() {
             </span>
           )}
         </button>
+      </div>
+
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white px-4 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] sm:hidden"
+        dir={language === "ar" ? "rtl" : "ltr"}
+      >
+        <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              backToShop();
+              setActiveCategory("All");
+              setSearchTerm("");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100"
+          >
+            <span className="text-lg" aria-hidden="true">⌂</span>
+            <span>{language === "ar" ? "الرئيسية" : "Home"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSearchFocusToken((value) => value + 1)}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100"
+          >
+            <span className="text-lg" aria-hidden="true">⌕</span>
+            <span>{language === "ar" ? "البحث" : "Search"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setOpenCart(true)}
+            className="relative flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100"
+          >
+            <span className="text-lg" aria-hidden="true">🛒</span>
+            <span>{language === "ar" ? "السلة" : "Cart"}</span>
+            {cart.reduce((sum, item) => sum + item.qty, 0) > 0 && (
+              <span className="absolute right-6 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {cart.reduce((sum, item) => sum + item.qty, 0)}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {openCart && (

@@ -55,10 +55,10 @@ export default function Hero({
     featuredProducts.length > 0 ? featuredProducts : products.slice(0, 3);
 
   return (
-    <div className="flex items-center justify-center px-4 py-3 sm:p-6">
+    <div className="flex items-center justify-center px-3 py-4 sm:p-6">
       <div
-        className={`relative flex w-full max-w-6xl flex-col items-center gap-4 overflow-hidden rounded-xl bg-gradient-to-r ${slide.bg} px-5 py-5 sm:gap-6 sm:rounded-2xl sm:p-8 md:flex-row`}
-        style={{ minHeight: "clamp(150px, 42vw, 220px)" }}
+        className={`relative flex w-full max-w-6xl flex-col items-center gap-3 overflow-hidden rounded-xl bg-gradient-to-r ${slide.bg} px-4 pb-8 pt-5 text-center sm:gap-6 sm:rounded-2xl sm:p-8 sm:text-start md:flex-row`}
+        style={{ minHeight: "clamp(210px, 56vw, 260px)" }}
       >
         <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/10 pointer-events-none sm:h-64 sm:w-64" />
         <div className="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/10 pointer-events-none sm:h-40 sm:w-40" />
@@ -70,7 +70,7 @@ export default function Hero({
           <p className="text-xs font-medium tracking-widest opacity-80 sm:text-sm">
             {copy.title}
           </p>
-          <h1 className="text-xl font-extrabold leading-tight sm:text-3xl md:text-4xl">
+          <h1 className="text-lg font-extrabold leading-tight sm:text-3xl md:text-4xl">
             {copy.subtitle}
           </h1>
           <button
@@ -83,7 +83,7 @@ export default function Hero({
         </div>
 
         <div
-          className="z-10 flex flex-1 justify-center gap-2 sm:gap-4"
+          className="z-10 grid w-full max-w-[230px] grid-cols-3 justify-center gap-2 sm:flex sm:max-w-none sm:flex-1 sm:gap-4"
           style={{ opacity: fading ? 0 : 1, transition: "opacity 0.3s" }}
         >
           {(displayProducts.length > 0 ? displayProducts : [null, null, null]).map(
@@ -92,7 +92,7 @@ export default function Hero({
                 key={product?.id ?? index}
                 type="button"
                 onClick={() => product && onProductClick?.(product)}
-                className="w-20 cursor-pointer rounded-lg bg-white p-1.5 text-left shadow-lg transition-transform duration-200 hover:scale-105 sm:w-28 sm:rounded-xl sm:p-2"
+                className="min-w-0 cursor-pointer rounded-lg bg-white p-1.5 text-left shadow-lg transition-transform duration-200 hover:scale-105 sm:w-28 sm:rounded-xl sm:p-2"
               >
                 <img
                   src={product?.img || PLACEHOLDER}
@@ -115,7 +115,7 @@ export default function Hero({
             key={side}
             type="button"
             onClick={fn}
-            className={`absolute ${side} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-white/40 active:scale-95 sm:h-9 sm:w-9`}
+            className={`absolute ${side} top-[62%] flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-white/40 active:scale-95 sm:top-1/2 sm:h-9 sm:w-9`}
           >
             {label}
           </button>
