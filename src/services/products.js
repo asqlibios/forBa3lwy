@@ -5,7 +5,6 @@ import {
   doc,
   getDocs,
   setDoc,
-  updateDoc,
 } from "firebase/firestore";
 import { db } from "../fireBase";
 
@@ -17,10 +16,12 @@ function normalizeProduct(docSnapshot) {
   return {
     id: docSnapshot.id,
     name: data.name ?? "",
+    nameAr: data.nameAr ?? "",
     price: Number(data.price ?? 0),
     img: data.img ?? "",
     tag: data.tag ?? null,
     category: data.category ?? "Men",
+    isOffer: Boolean(data.isOffer ?? data.tag === "Sale"),
   };
 }
 
@@ -40,10 +41,12 @@ export async function seedProductsIfEmpty(products) {
     products.map((product) =>
       setDoc(doc(productsCollection, String(product.id)), {
         name: product.name,
+        nameAr: product.nameAr ?? "",
         price: Number(product.price),
         img: product.img,
         tag: product.tag ?? null,
         category: product.category ?? "Men",
+        isOffer: Boolean(product.isOffer ?? product.tag === "Sale"),
       })
     )
   );
@@ -53,16 +56,19 @@ export async function seedProductsIfEmpty(products) {
     id: String(product.id),
     price: Number(product.price),
     tag: product.tag ?? null,
+    isOffer: Boolean(product.isOffer ?? product.tag === "Sale"),
   }));
 }
 
 export async function createProduct(product) {
   const payload = {
     name: product.name,
+    nameAr: product.nameAr ?? "",
     price: Number(product.price),
     img: product.img,
     tag: product.tag ?? null,
     category: product.category ?? "Men",
+    isOffer: Boolean(product.isOffer),
   };
 
   const newDoc = await addDoc(productsCollection, payload);
@@ -76,13 +82,15 @@ export async function createProduct(product) {
 export async function editProduct(id, product) {
   const payload = {
     name: product.name,
+    nameAr: product.nameAr ?? "",
     price: Number(product.price),
     img: product.img,
     tag: product.tag ?? null,
     category: product.category ?? "Men",
+    isOffer: Boolean(product.isOffer),
   };
 
-  await updateDoc(doc(productsCollection, String(id)), payload);
+  await setDoc(doc(productsCollection, String(id)), payload, { merge: true });
 
   return {
     id: String(id),

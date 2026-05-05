@@ -8,7 +8,8 @@ import Footer from "./components/Footer";
 import AdminPage from "./pages/AdminPage";
 import AdminOrders from "./pages/AdminOrders";
 import AdminLoginPage from "./pages/AdminLoginPage";
-import { PRODUCTS as INITIAL_PRODUCTS } from "./data/products";
+import AdminHeroPage from "./pages/AdminHeroPage";
+import { PRODUCTS as INITIAL_PRODUCTS, isOfferProduct } from "./data/products";
 import { productMatchesQuery } from "./data/shop";
 import {
   signInAdmin,
@@ -27,11 +28,26 @@ import {
   removeProduct,
   seedProductsIfEmpty,
 } from "./services/products";
+import {
+  createHeroSlide,
+  editHeroSlide,
+  fetchHeroSlides,
+  removeHeroSlide,
+} from "./services/heroSlides";
 
 const ORDERS_LAST_SEEN_KEY = "adminOrdersLastSeenAt";
 const LANGUAGE_KEY = "shopLanguage";
 const DEFAULT_SEARCH_CATEGORY = "All";
 const DEFAULT_SORT_OPTION = "relevance";
+
+function mergeWithLocalProducts(liveProducts, localProducts) {
+  const liveIds = new Set(liveProducts.map((product) => String(product.id)));
+  const missingLocalProducts = localProducts
+    .filter((product) => !liveIds.has(String(product.id)))
+    .map((product) => ({ ...product, id: String(product.id) }));
+
+  return [...liveProducts, ...missingLocalProducts];
+}
 
 function getRouteFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -56,9 +72,12 @@ export default function App() {
   const [page, setPage] = useState("shop");
   const [adminSection, setAdminSection] = useState("products");
   const [products, setProducts] = useState([]);
+  const [heroSlides, setHeroSlides] = useState([]);
   const [route, setRoute] = useState(getRouteFromLocation);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingHeroSlides, setIsLoadingHeroSlides] = useState(true);
   const [productsError, setProductsError] = useState("");
+  const [heroSlidesError, setHeroSlidesError] = useState("");
   const [adminUser, setAdminUser] = useState(null);
   const [isCheckingAdminAuth, setIsCheckingAdminAuth] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -101,7 +120,7 @@ export default function App() {
         const liveProducts = await fetchProducts();
         const finalProducts =
           liveProducts.length > 0
-            ? liveProducts
+            ? mergeWithLocalProducts(liveProducts, INITIAL_PRODUCTS)
             : await seedProductsIfEmpty(INITIAL_PRODUCTS);
 
         if (isMounted) {
@@ -129,6 +148,42 @@ export default function App() {
     }
 
     loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadHeroSlides() {
+      try {
+        setIsLoadingHeroSlides(true);
+        setHeroSlidesError("");
+
+        const liveSlides = await fetchHeroSlides();
+
+        if (isMounted) {
+          setHeroSlides(liveSlides);
+        }
+      } catch (error) {
+        console.error("Failed to load hero slides from Firestore:", error);
+
+        if (isMounted) {
+          setHeroSlides([]);
+          setHeroSlidesError(
+            "Unable to reach Firebase. Showing default hero offers for now."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingHeroSlides(false);
+        }
+      }
+    }
+
+    loadHeroSlides();
 
     return () => {
       isMounted = false;
@@ -215,7 +270,10 @@ export default function App() {
         )
       : products.filter(
           (product) =>
-            activeCategory === "All" || product.category === activeCategory
+            activeCategory === "All" ||
+            (activeCategory === "Sale"
+              ? isOfferProduct(product)
+              : product.category === activeCategory)
         );
 
     if (!hasSearch || effectiveSortOption === DEFAULT_SORT_OPTION) {
@@ -322,6 +380,25 @@ export default function App() {
   const handleDeleteProduct = async (id) => {
     await removeProduct(id);
     setProducts((prev) => prev.filter((item) => String(item.id) !== String(id)));
+  };
+
+  const handleCreateHeroSlide = async (slide) => {
+    const savedSlide = await createHeroSlide(slide);
+    setHeroSlides((prev) => [...prev, savedSlide]);
+    return savedSlide;
+  };
+
+  const handleUpdateHeroSlide = async (id, slide) => {
+    const savedSlide = await editHeroSlide(id, slide);
+    setHeroSlides((prev) =>
+      prev.map((item) => (String(item.id) === String(id) ? savedSlide : item))
+    );
+    return savedSlide;
+  };
+
+  const handleDeleteHeroSlide = async (id) => {
+    await removeHeroSlide(id);
+    setHeroSlides((prev) => prev.filter((item) => String(item.id) !== String(id)));
   };
 
   const handleAdminLogin = async (email, password) => {
@@ -435,6 +512,16 @@ export default function App() {
                 Products
               </button>
               <button
+                onClick={() => setAdminSection("hero")}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                  adminSection === "hero"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                Hero Offers
+              </button>
+              <button
                 onClick={() => {
                   setAdminSection("orders");
                   markOrdersAsSeen();
@@ -486,6 +573,16 @@ export default function App() {
             onCreateProduct={handleCreateProduct}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
+          />
+        ) : adminSection === "hero" ? (
+          <AdminHeroPage
+            slides={heroSlides}
+            products={products}
+            isLoading={isLoadingHeroSlides}
+            error={heroSlidesError}
+            onCreateSlide={handleCreateHeroSlide}
+            onUpdateSlide={handleUpdateHeroSlide}
+            onDeleteSlide={handleDeleteHeroSlide}
           />
         ) : (
           <AdminOrders onSeen={markOrdersAsSeen} />
@@ -563,7 +660,12 @@ export default function App() {
           />
 
           {activeCategory === "All" && !searchTerm.trim() && (
-            <Hero language={language} />
+            <Hero
+              language={language}
+              slides={heroSlides}
+              products={products}
+              onProductClick={openProductPage}
+            />
           )}
 
           <Products
