@@ -4,6 +4,7 @@ import CategoryBar from "./components/CategoryBar";
 import Hero from "./components/Hero";
 import Products from "./components/Product";
 import ProductPage from "./pages/ProductPage";
+import Cart from "./pages/Cart";
 import Footer from "./components/Footer";
 import AdminPage from "./pages/AdminPage";
 import AdminOrders from "./pages/AdminOrders";
@@ -37,6 +38,7 @@ import {
 
 const ORDERS_LAST_SEEN_KEY = "adminOrdersLastSeenAt";
 const LANGUAGE_KEY = "shopLanguage";
+const THEME_KEY = "shopTheme";
 const DEFAULT_SEARCH_CATEGORY = "All";
 const DEFAULT_SORT_OPTION = "relevance";
 
@@ -62,8 +64,12 @@ function getRouteFromLocation() {
 
 export default function App() {
   const [cart, setCart] = useState([]);
+  const [openCart, setOpenCart] = useState(false);
   const [language, setLanguage] = useState(
     () => localStorage.getItem(LANGUAGE_KEY) || "ar"
+  );
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem(THEME_KEY) || "light"
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [searchCategory, setSearchCategory] = useState(DEFAULT_SEARCH_CATEGORY);
@@ -99,6 +105,11 @@ export default function App() {
     document.documentElement.lang = language === "ar" ? "ar" : "en";
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, theme);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   useEffect(() => {
     const unsubscribe = subscribeToAdminAuth((user) => {
@@ -598,13 +609,21 @@ export default function App() {
     >
       <Navbar
         cart={cart}
-        removeFromCart={removeFromCart}
-        updateQty={updateQty}
-        clearCart={clearCart}
         language={language}
         onLanguageChange={setLanguage}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        theme={theme}
+        onThemeToggle={() =>
+          setTheme((currentTheme) =>
+            currentTheme === "dark" ? "light" : "dark"
+          )
+        }
+        onOpenAdmin={() => {
+          backToShop();
+          setPage("admin");
+        }}
+        onOpenCart={() => setOpenCart(true)}
       />
 
       {productsError && (
@@ -689,20 +708,28 @@ export default function App() {
 
       <div className="fixed bottom-6 right-6 z-50">
         <button
-          onClick={() => {
-            backToShop();
-            setPage("admin");
-          }}
-          className="relative rounded-full border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-700 shadow-lg transition-all duration-150 hover:bg-gray-50 active:scale-95"
+          onClick={() => setOpenCart(true)}
+          className="relative rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-xl transition-all duration-150 hover:bg-gray-50 active:scale-95"
         >
-          Admin
-          {ordersUnreadCount > 0 && (
+          {language === "ar" ? "السلة" : "Cart"}
+          {cart.reduce((sum, item) => sum + item.qty, 0) > 0 && (
             <span className="absolute -top-2 -right-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-              {ordersUnreadCount}
+              {cart.reduce((sum, item) => sum + item.qty, 0)}
             </span>
           )}
         </button>
       </div>
+
+      {openCart && (
+        <Cart
+          cart={cart}
+          onClose={() => setOpenCart(false)}
+          removeFromCart={removeFromCart}
+          updateQty={updateQty}
+          clearCart={clearCart}
+          language={language}
+        />
+      )}
 
       {notificationToast && (
         <div className="fixed left-6 top-6 z-[60] w-full max-w-sm rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-2xl">

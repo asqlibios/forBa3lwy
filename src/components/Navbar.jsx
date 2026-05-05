@@ -1,18 +1,47 @@
-import { useState } from "react";
-import Cart from "../pages/Cart";
+import { useEffect, useRef, useState } from "react";
+
+const WHATSAPP_NUMBER = "734743477";
+
+function buildComplaintUrl(language) {
+  const message =
+    language === "ar"
+      ? "السلام عليكم، عندي شكوى أو استفسار بخصوص المتجر."
+      : "Hello, I have a complaint or question about the store.";
+
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
 
 export default function Navbar({
   cart = [],
-  removeFromCart,
-  updateQty,
-  clearCart,
   language = "ar",
   onLanguageChange,
   searchTerm = "",
   onSearchChange,
+  theme = "light",
+  onThemeToggle,
+  onOpenAdmin,
+  onOpenCart,
 }) {
-  const [openCart, setOpenCart] = useState(false);
-  const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
+  const [openSettings, setOpenSettings] = useState(false);
+  const settingsRef = useRef(null);
+  const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+  const isDark = theme === "dark";
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target)
+      ) {
+        setOpenSettings(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const closeSettings = () => setOpenSettings(false);
 
   return (
     <>
@@ -34,7 +63,9 @@ export default function Navbar({
               type="search"
               value={searchTerm}
               onChange={(event) => onSearchChange?.(event.target.value)}
-              aria-label={language === "ar" ? "البحث في المنتجات" : "Search products"}
+              aria-label={
+                language === "ar" ? "البحث في المنتجات" : "Search products"
+              }
               placeholder={
                 language === "ar"
                   ? "ابحث بالاسم أو القسم"
@@ -53,52 +84,132 @@ export default function Navbar({
                 language === "ar" ? "right-4" : "left-4"
               }`}
             >
-              ⌕
+             ⌕
             </span>
           </label>
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center rounded-full bg-white/10 p-1">
-            <button
-              type="button"
-              onClick={() => onLanguageChange?.("ar")}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                language === "ar"
-                  ? "bg-white text-black"
-                  : "text-white/75 hover:text-white"
-              }`}
-            >
-              AR
-            </button>
-            <button
-              type="button"
-              onClick={() => onLanguageChange?.("en")}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                language === "en"
-                  ? "bg-white text-black"
-                  : "text-white/75 hover:text-white"
-              }`}
-            >
-              EN
-            </button>
-          </div>
-
+        <div className="relative ml-auto" ref={settingsRef}>
           <button
-            onClick={() => setOpenCart(true)}
-            className="relative flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition-all duration-200 hover:scale-105 hover:bg-gray-100 active:scale-95"
+            type="button"
+            onClick={() => setOpenSettings((value) => !value)}
+            aria-label={language === "ar" ? "الإعدادات" : "Settings"}
+            aria-expanded={openSettings}
+            className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-bold text-black transition-all duration-200 hover:scale-105 hover:bg-gray-100 active:scale-95"
           >
-            <span aria-hidden="true">🛒</span>
-            <span>{language === "ar" ? "السلة" : "Cart"}</span>
+            ⚙
             {totalItems > 0 && (
-              <span
-                className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
-                style={{ animation: "pop 0.3s ease" }}
-              >
+              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
                 {totalItems}
               </span>
             )}
           </button>
+
+          {openSettings && (
+            <div
+              className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-2xl"
+              dir={language === "ar" ? "rtl" : "ltr"}
+            >
+              <div className="border-b border-gray-100 px-4 py-3">
+                <p className="text-sm font-extrabold">
+                  {language === "ar" ? "الإعدادات" : "Settings"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeSettings();
+                  onOpenAdmin?.();
+                }}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
+              >
+                <span>{language === "ar" ? "الأدمن" : "Admin"}</span>
+                <span aria-hidden="true">›</span>
+              </button>
+
+              <a
+                href={buildComplaintUrl(language)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={closeSettings}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
+              >
+                <span>
+                  {language === "ar" ? "الشكاوي والتواصل" : "Complaints"}
+                </span>
+                <span className="text-xs text-green-600">WhatsApp</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeSettings();
+                  onOpenCart?.();
+                }}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
+              >
+                <span>{language === "ar" ? "السلة" : "Cart"}</span>
+                <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                  {totalItems}
+                </span>
+              </button>
+
+              <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+                <span className="text-sm font-semibold">
+                  {language === "ar" ? "الوضع الليلي" : "Dark mode"}
+                </span>
+                <button
+                  type="button"
+                  onClick={onThemeToggle}
+                  className={`flex h-7 w-12 items-center rounded-full p-1 transition-colors ${
+                    isDark ? "bg-black" : "bg-gray-200"
+                  }`}
+                  aria-pressed={isDark}
+                >
+                  <span
+                    className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      isDark
+                        ? language === "ar"
+                          ? "-translate-x-5"
+                          : "translate-x-5"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="border-t border-gray-100 px-4 py-3">
+                <p className="mb-2 text-xs font-bold uppercase text-gray-400">
+                  {language === "ar" ? "اللغة" : "Language"}
+                </p>
+                <div className="flex items-center rounded-full bg-gray-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => onLanguageChange?.("ar")}
+                    className={`flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                      language === "ar"
+                        ? "bg-black text-white"
+                        : "text-gray-500 hover:text-black"
+                    }`}
+                  >
+                    AR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onLanguageChange?.("en")}
+                    className={`flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                      language === "en"
+                        ? "bg-black text-white"
+                        : "text-gray-500 hover:text-black"
+                    }`}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -109,17 +220,6 @@ export default function Navbar({
           100% { transform: scale(1); }
         }
       `}</style>
-
-      {openCart && (
-        <Cart
-          cart={cart}
-          onClose={() => setOpenCart(false)}
-          removeFromCart={removeFromCart}
-          updateQty={updateQty}
-          clearCart={clearCart}
-          language={language}
-        />
-      )}
     </>
   );
 }

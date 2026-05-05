@@ -1,1 +1,61 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .bg-gray-50 {
+  background: #0f172a;
+}
+
+:root[data-theme="dark"] .bg-white,
+:root[data-theme="dark"] .bg-white\/70,
+:root[data-theme="dark"] .bg-white\/90,
+:root[data-theme="dark"] .bg-gray-50\/50 {
+  background-color: #111827;
+}
+
+:root[data-theme="dark"] .bg-gray-100,
+:root[data-theme="dark"] .bg-gray-50 {
+  background-color: #1f2937;
+}
+
+:root[data-theme="dark"] .text-gray-900,
+:root[data-theme="dark"] .text-gray-800,
+:root[data-theme="dark"] .text-black {
+  color: #f9fafb;
+}
+
+:root[data-theme="dark"] .text-gray-700,
+:root[data-theme="dark"] .text-gray-600,
+:root[data-theme="dark"] .text-gray-500 {
+  color: #d1d5db;
+}
+
+:root[data-theme="dark"] .text-gray-400 {
+  color: #9ca3af;
+}
+
+:root[data-theme="dark"] .border,
+:root[data-theme="dark"] .border-gray-100,
+:root[data-theme="dark"] .border-gray-200,
+:root[data-theme="dark"] .border-gray-300 {
+  border-color: #374151;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: #6b7280;
+}
