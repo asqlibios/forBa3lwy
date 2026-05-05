@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
+import { getProductDisplayName, isOfferProduct } from "../data/products";
 import { TAG_COLORS } from "../data/shop";
+
+const IMAGE_FALLBACK =
+  "https://placehold.co/600x750/f3f4f6/374151?text=Product";
 
 const PRODUCT_SPECS = {
   1: {
@@ -144,6 +148,89 @@ const PRODUCT_SPECS = {
   },
 };
 
+const PRODUCT_SPEC_TRANSLATIONS = {
+  1: {
+    material: "قطن 100%",
+    fit: "قصة عادية",
+    care: "غسيل آلي على 30 درجة",
+    origin: "صنع في البرتغال",
+    description:
+      "قميص كلاسيكي بتصميم عملي مصنوع من قطن ناعم يسمح بالتهوية، مع ياقة بأزرار وجيب أمامي.",
+  },
+  2: {
+    material: "الخارج: بوليستر 100% / البطانة: زغب 80%",
+    fit: "قصة واسعة",
+    care: "تنظيف جاف فقط",
+    origin: "صنع في الصين",
+    description:
+      "جاكيت شتوي دافئ يجمع بين الراحة والأناقة، ببطانة مبطنة وهيكل خارجي مقاوم للرياح.",
+  },
+  3: {
+    material: "فيسكوز 95%، إيلاستان 5%",
+    fit: "قصة انسيابية",
+    care: "غسيل يدوي بماء بارد",
+    origin: "صنع في تركيا",
+    description:
+      "فستان صيفي خفيف بطابع زهري، بقماش فيسكوز ينسدل بنعومة ويمنحك إحساسا منعشا.",
+  },
+  4: {
+    material: "قطن 80%، بوليستر 20%",
+    fit: "قصة واسعة",
+    care: "غسيل آلي على 40 درجة",
+    origin: "صنع في بنغلاديش",
+    description:
+      "هودي مبطن بالفليس شديد النعومة للراحة اليومية، مع جيب أمامي ورباط قابل للتعديل.",
+  },
+  5: {
+    material: "قطن 98%، إيلاستان 2%",
+    fit: "قصة ضيقة",
+    care: "غسيل آلي على 30 درجة",
+    origin: "صنع في البرتغال",
+    description:
+      "بنطال بقصة عصرية ضيقة مع نسبة تمدد خفيفة تمنحك حركة أسهل طوال اليوم.",
+  },
+  6: {
+    material: "الجزء العلوي: جلد / النعل: مطاط",
+    fit: "مطابق للمقاس",
+    care: "يمسح بقطعة قماش رطبة",
+    origin: "صنع في فيتنام",
+    description:
+      "حذاء رياضي منخفض بتصميم بسيط وسهل التنسيق، مع نعل داخلي مريح وجلد متين.",
+  },
+  7: {
+    material: "جلد صناعي / بطانة قماشية",
+    fit: "حزام قابل للتعديل: 60-120 سم",
+    care: "يمسح بقطعة قماش جافة",
+    origin: "صنع في إيطاليا",
+    description:
+      "حقيبة يد يومية بتصميم ثابت ومساحة داخلية واسعة وإغلاق مغناطيسي آمن.",
+  },
+  8: {
+    material: "الإطار: أسيتات / العدسات: بولي كربونات UV400",
+    fit: "مناسبة للوجه المتوسط",
+    care: "تستخدم قطعة قماش مايكروفايبر",
+    origin: "صنع في إيطاليا",
+    description:
+      "نظارة شمسية مربعة كلاسيكية توفر حماية UV400 كاملة مع تصميم خفيف ومريح.",
+  },
+  9: {
+    material: "دينم قطني 100% (12 أونصة)",
+    fit: "قصة عادية",
+    care: "غسيل آلي بارد من الداخل للخارج",
+    origin: "صنع في المكسيك",
+    description:
+      "جاكيت جينز كلاسيكي بحواف خام وأزرار معدنية ولمسة لون متوسطة سهلة التنسيق.",
+  },
+  10: {
+    material: "ساتان بوليستر 100%",
+    fit: "خصر عال وقصة واسعة",
+    care: "غسيل يدوي بارد، بدون تجفيف آلي",
+    origin: "صنع في تركيا",
+    description:
+      "تنورة ساتان طويلة بلمعة ناعمة وقصة انسيابية تضيف لمسة أنيقة للإطلالة.",
+  },
+};
+
 const SPEC_KEYS = {
   chest: "Chest",
   length: "Length",
@@ -236,15 +323,21 @@ export default function ProductPage({
   const [visible, setVisible] = useState(false);
   const copy = TEXT[language] || TEXT.ar;
   const specLabels = SPEC_KEY_LABELS[language] || SPEC_KEY_LABELS.ar;
+  const productName = getProductDisplayName(product, language);
+  const displayTag = isOfferProduct(product) ? "Sale" : product.tag;
 
-  const specs = PRODUCT_SPECS[product.id] || {
+  const baseSpecs = PRODUCT_SPECS[product.id] || {
     sizes: [{ label: "One Size" }],
     material: copy.notAvailable,
     fit: copy.notAvailable,
     care: copy.notAvailable,
     origin: copy.notAvailable,
-    description: product.name,
+    description: productName,
   };
+  const specs =
+    language === "ar"
+      ? { ...baseSpecs, ...PRODUCT_SPEC_TRANSLATIONS[String(product.id)] }
+      : baseSpecs;
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -286,7 +379,7 @@ export default function ProductPage({
           {copy.back}
         </button>
         <span>/</span>
-        <span className="font-semibold text-black">{product.name}</span>
+        <span className="font-semibold text-black">{productName}</span>
       </div>
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 pb-20 md:grid-cols-2">
@@ -297,15 +390,19 @@ export default function ProductPage({
           >
             <img
               src={product.img}
-              alt={product.name}
+              alt={productName}
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = IMAGE_FALLBACK;
+              }}
               className="h-full w-full object-cover"
             />
           </div>
-          {product.tag && (
+          {displayTag && (
             <span
-              className={`absolute left-4 top-4 rounded-full px-3 py-1 text-sm font-bold text-white ${TAG_COLORS[product.tag]}`}
+              className={`absolute left-4 top-4 rounded-full px-3 py-1 text-sm font-bold text-white ${TAG_COLORS[displayTag]}`}
             >
-              {copy.tags[product.tag] || product.tag}
+              {copy.tags[displayTag] || displayTag}
             </span>
           )}
           {inCart && (
@@ -321,7 +418,7 @@ export default function ProductPage({
               {specs.origin}
             </p>
             <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
-              {product.name}
+              {productName}
             </h1>
             <p className="mt-2 text-3xl font-bold text-red-500">
               SAR {product.price.toFixed(2)}

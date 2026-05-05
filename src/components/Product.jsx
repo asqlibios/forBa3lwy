@@ -1,5 +1,8 @@
-import { PRODUCTS } from "../data/products";
+import { PRODUCTS, getProductDisplayName, isOfferProduct } from "../data/products";
 import { TAG_COLORS, getCategoryLabels, getTagLabels } from "../data/shop";
+
+const IMAGE_FALLBACK =
+  "https://placehold.co/300x360/f3f4f6/374151?text=Product";
 
 export default function Products({
   cart,
@@ -149,7 +152,11 @@ export default function Products({
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-5 md:grid-cols-4 lg:grid-cols-5">
-          {products.map((product, index) => (
+          {products.map((product, index) => {
+            const productName = getProductDisplayName(product, language);
+            const displayTag = isOfferProduct(product) ? "Sale" : product.tag;
+
+            return (
             <button
               key={product.id}
               type="button"
@@ -160,15 +167,19 @@ export default function Products({
               <div className="relative overflow-hidden">
                 <img
                   src={product.img}
-                  alt={product.name}
-                  className="h-64 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  alt={productName}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = IMAGE_FALLBACK;
+                  }}
+                  className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:h-64"
                 />
 
-                {product.tag && (
+                {displayTag && (
                   <span
-                    className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-xs font-bold text-white ${TAG_COLORS[product.tag]}`}
+                    className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-xs font-bold text-white ${TAG_COLORS[displayTag]}`}
                   >
-                    {tagLabels[product.tag] || product.tag}
+                    {tagLabels[displayTag] || displayTag}
                   </span>
                 )}
 
@@ -185,17 +196,18 @@ export default function Products({
                 </div>
               </div>
 
-              <div className="p-4">
-                <p className="truncate text-base font-semibold">{product.name}</p>
+              <div className="p-3 sm:p-4">
+                <p className="truncate text-sm font-semibold sm:text-base">{productName}</p>
                 <p className="mb-1 text-xs text-gray-400">
                   {categoryLabels[product.category] || product.category}
                 </p>
-                <p className="text-lg font-bold text-red-500">
+                <p className="text-base font-bold text-red-500 sm:text-lg">
                   SAR {product.price.toFixed(2)}
                 </p>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
 

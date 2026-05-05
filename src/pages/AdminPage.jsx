@@ -6,7 +6,39 @@ import {
   normalizeSearchText,
 } from "../data/shop";
 
-const EMPTY_FORM = { name: "", price: "", category: "Men", tag: "", img: "" };
+const EMPTY_FORM = {
+  name: "",
+  nameAr: "",
+  price: "",
+  category: "Men",
+  tag: "",
+  isOffer: false,
+  img: "",
+};
+
+const IMAGE_FALLBACK =
+  "https://placehold.co/300x360/f3f4f6/374151?text=Product";
+
+function normalizeImageUrl(value) {
+  const imageUrl = value.trim();
+
+  if (!imageUrl) {
+    return "";
+  }
+
+  const normalizedExtension = imageUrl.replace(/\.peg($|\?)/i, ".jpeg$1");
+
+  if (
+    normalizedExtension.startsWith("/") ||
+    normalizedExtension.startsWith("http://") ||
+    normalizedExtension.startsWith("https://") ||
+    normalizedExtension.startsWith("data:")
+  ) {
+    return normalizedExtension;
+  }
+
+  return `/${normalizedExtension}`;
+}
 
 export default function AdminPage({
   products = [],
@@ -29,7 +61,8 @@ export default function AdminPage({
   const filtered = products.filter((product) => {
     const matchesSearch =
       !normalizedSearch ||
-      normalizeSearchText(product.name).includes(normalizedSearch);
+      normalizeSearchText(product.name).includes(normalizedSearch) ||
+      normalizeSearchText(product.nameAr).includes(normalizedSearch);
     const matchesCategory =
       filterCat === "All" || product.category === filterCat;
 
@@ -53,8 +86,13 @@ export default function AdminPage({
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim() || !form.price || Number.isNaN(Number(form.price))) {
-      showToast("Please fill in name and a valid price.", "error");
+    if (
+      !form.name.trim() ||
+      !form.nameAr.trim() ||
+      !form.price ||
+      Number.isNaN(Number(form.price))
+    ) {
+      showToast("Please fill in both names and a valid price.", "error");
       return;
     }
 
@@ -63,13 +101,17 @@ export default function AdminPage({
       return;
     }
 
+    const imageUrl = normalizeImageUrl(form.img);
+
     const payload = {
       name: form.name.trim(),
+      nameAr: form.nameAr.trim(),
       price: Number(form.price),
       category: form.category,
       tag: form.tag || null,
+      isOffer: form.isOffer,
       img:
-        form.img.trim() ||
+        imageUrl ||
         `https://placehold.co/300x360/f3f4f6/374151?text=${encodeURIComponent(
           form.name.trim()
         )}`,
@@ -98,9 +140,11 @@ export default function AdminPage({
   const handleEdit = (product) => {
     setForm({
       name: product.name,
+      nameAr: product.nameAr || "",
       price: String(product.price),
       category: product.category,
       tag: product.tag || "",
+      isOffer: Boolean(product.isOffer || product.tag === "Sale" || product.category === "Sale"),
       img: product.img,
     });
     setEditId(product.id);
@@ -177,7 +221,7 @@ export default function AdminPage({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
-                  Product Name
+                  English Name
                 </label>
                 <input
                   value={form.name}
@@ -185,6 +229,20 @@ export default function AdminPage({
                     setForm({ ...form, name: event.target.value })
                   }
                   placeholder="e.g. Classic Shirt"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
+                  Arabic Name
+                </label>
+                <input
+                  value={form.nameAr}
+                  onChange={(event) =>
+                    setForm({ ...form, nameAr: event.target.value })
+                  }
+                  placeholder="مثال: قميص كلاسيكي"
+                  dir="rtl"
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
@@ -238,6 +296,24 @@ export default function AdminPage({
                   ))}
                 </select>
               </div>
+              <label className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.isOffer}
+                  onChange={(event) =>
+                    setForm({ ...form, isOffer: event.target.checked })
+                  }
+                  className="h-4 w-4 accent-red-500"
+                />
+                <span>
+                  <span className="block text-sm font-bold text-red-700">
+                    Show in Offers
+                  </span>
+                  <span className="block text-xs text-red-500">
+                    يظهر المنتج داخل قسم العروض في المتجر
+                  </span>
+                </span>
+              </label>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Image URL
@@ -247,9 +323,12 @@ export default function AdminPage({
                   onChange={(event) =>
                     setForm({ ...form, img: event.target.value })
                   }
-                  placeholder="https://..."
+                  placeholder="https://... or /r.jpeg"
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
+                <p className="mt-1 text-xs text-gray-400">
+                  Local images must already be in public, for example /r.jpeg.
+                </p>
               </div>
             </div>
 
@@ -309,7 +388,12 @@ export default function AdminPage({
             },
             {
               label: "On Sale",
-              value: products.filter((product) => product.tag === "Sale").length,
+              value: products.filter(
+                (product) =>
+                  product.isOffer ||
+                  product.tag === "Sale" ||
+                  product.category === "Sale"
+              ).length,
               color: "border border-red-100 bg-red-50 text-red-600",
             },
             {
@@ -364,10 +448,24 @@ export default function AdminPage({
                       <img
                         src={product.img}
                         alt={product.name}
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = IMAGE_FALLBACK;
+                        }}
                         className="h-12 w-10 rounded-lg bg-gray-100 object-cover"
                       />
-                      <span className="max-w-[140px] truncate font-semibold text-gray-800">
-                        {product.name}
+                      <span className="max-w-[180px]">
+                        <span className="block truncate font-semibold text-gray-800">
+                          {product.name}
+                        </span>
+                        {product.nameAr && (
+                          <span
+                            className="block truncate text-xs text-gray-400"
+                            dir="rtl"
+                          >
+                            {product.nameAr}
+                          </span>
+                        )}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-gray-500">{product.category}</td>
@@ -375,7 +473,11 @@ export default function AdminPage({
                       ${product.price.toFixed(2)}
                     </td>
                     <td className="px-5 py-3">
-                      {product.tag ? (
+                      {product.isOffer || product.tag === "Sale" || product.category === "Sale" ? (
+                        <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
+                          Sale
+                        </span>
+                      ) : product.tag ? (
                         <span
                           className={`${TAG_COLORS[product.tag]} rounded-full px-2.5 py-0.5 text-xs font-bold text-white`}
                         >
