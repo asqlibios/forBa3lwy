@@ -5,6 +5,10 @@ import {
   TAG_COLORS,
   normalizeSearchText,
 } from "../data/shop";
+import {
+  SIZE_TEMPLATE_CATEGORIES,
+  SIZE_TEMPLATE_CATEGORY_LABELS,
+} from "../data/sizing";
 
 const EMPTY_FORM = {
   name: "",
@@ -14,6 +18,8 @@ const EMPTY_FORM = {
   tag: "",
   isOffer: false,
   img: "",
+  sizeTemplateCategory: "",
+  sizeTemplateId: "",
 };
 
 const IMAGE_FALLBACK =
@@ -42,6 +48,7 @@ function normalizeImageUrl(value) {
 
 export default function AdminPage({
   products = [],
+  sizeTemplates = [],
   isLoading = false,
   error = "",
   onCreateProduct,
@@ -57,6 +64,9 @@ export default function AdminPage({
   const [toast, setToast] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const normalizedSearch = normalizeSearchText(search);
+  const availableTemplates = sizeTemplates.filter(
+    (template) => template.category === form.sizeTemplateCategory
+  );
 
   const filtered = products.filter((product) => {
     const matchesSearch =
@@ -110,6 +120,11 @@ export default function AdminPage({
       category: form.category,
       tag: form.tag || null,
       isOffer: form.isOffer,
+      sizeTemplateCategory: form.sizeTemplateCategory || null,
+      sizeTemplateId:
+        form.sizeTemplateCategory && form.sizeTemplateId
+          ? form.sizeTemplateId
+          : null,
       img:
         imageUrl ||
         `https://placehold.co/300x360/f3f4f6/374151?text=${encodeURIComponent(
@@ -146,6 +161,8 @@ export default function AdminPage({
       tag: product.tag || "",
       isOffer: Boolean(product.isOffer || product.tag === "Sale" || product.category === "Sale"),
       img: product.img,
+      sizeTemplateCategory: product.sizeTemplateCategory || "",
+      sizeTemplateId: product.sizeTemplateId || "",
     });
     setEditId(product.id);
     setShowForm(true);
@@ -314,6 +331,77 @@ export default function AdminPage({
                   </span>
                 </span>
               </label>
+              <div className="md:col-span-2 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <label className="block text-xs font-bold uppercase text-gray-500">
+                      Managed Size Template
+                    </label>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Use this only for shirts and pants. Shoes keep their normal sizing.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
+                      Size Type
+                    </label>
+                    <select
+                      value={form.sizeTemplateCategory}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          sizeTemplateCategory: event.target.value,
+                          sizeTemplateId: "",
+                        })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    >
+                      <option value="">No Template</option>
+                      {SIZE_TEMPLATE_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {SIZE_TEMPLATE_CATEGORY_LABELS[category]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
+                      Size Template
+                    </label>
+                    <select
+                      value={form.sizeTemplateId}
+                      onChange={(event) =>
+                        setForm({ ...form, sizeTemplateId: event.target.value })
+                      }
+                      disabled={!form.sizeTemplateCategory}
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black disabled:cursor-not-allowed disabled:bg-gray-100"
+                    >
+                      <option value="">
+                        {form.sizeTemplateCategory
+                          ? "Select a reusable template"
+                          : "Choose a size type first"}
+                      </option>
+                      {availableTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    {form.sizeTemplateCategory &&
+                      availableTemplates.length === 0 && (
+                        <p className="mt-1 text-xs text-amber-600">
+                          No {SIZE_TEMPLATE_CATEGORY_LABELS[
+                            form.sizeTemplateCategory
+                          ]?.toLowerCase()} templates available yet.
+                        </p>
+                      )}
+                  </div>
+                </div>
+              </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-xs font-bold uppercase text-gray-500">
                   Image URL
@@ -413,7 +501,7 @@ export default function AdminPage({
           <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-gray-50">
               <tr>
-                {["Product", "Category", "Price", "Tag", "Actions"].map(
+                {["Product", "Category", "Sizing", "Price", "Tag", "Actions"].map(
                   (heading) => (
                     <th
                       key={heading}
@@ -428,13 +516,13 @@ export default function AdminPage({
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-gray-400">
+                  <td colSpan={6} className="py-16 text-center text-gray-400">
                     Loading products...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-gray-400">
+                  <td colSpan={6} className="py-16 text-center text-gray-400">
                     No products found.
                   </td>
                 </tr>
@@ -469,6 +557,29 @@ export default function AdminPage({
                       </span>
                     </td>
                     <td className="px-5 py-3 text-gray-500">{product.category}</td>
+                    <td className="px-5 py-3 text-gray-500">
+                      {product.sizeTemplateCategory ? (
+                        <div>
+                          <p className="font-medium text-gray-800">
+                            {SIZE_TEMPLATE_CATEGORY_LABELS[
+                              product.sizeTemplateCategory
+                            ] || product.sizeTemplateCategory}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {sizeTemplates.find(
+                              (template) =>
+                                String(template.id) === String(product.sizeTemplateId)
+                            )?.name || "Template not found"}
+                          </p>
+                        </div>
+                      ) : product.category === "Shoes" ? (
+                        <span className="text-xs font-semibold text-blue-600">
+                          Universal shoe sizing
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-300">Default</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3 font-bold text-red-500">
                       ${product.price.toFixed(2)}
                     </td>

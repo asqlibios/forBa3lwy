@@ -22,6 +22,8 @@ function normalizeProduct(docSnapshot) {
     tag: data.tag ?? null,
     category: data.category ?? "Men",
     isOffer: Boolean(data.isOffer ?? data.tag === "Sale"),
+    sizeTemplateCategory: data.sizeTemplateCategory ?? null,
+    sizeTemplateId: data.sizeTemplateId ?? null,
   };
 }
 
@@ -47,6 +49,8 @@ export async function seedProductsIfEmpty(products) {
         tag: product.tag ?? null,
         category: product.category ?? "Men",
         isOffer: Boolean(product.isOffer ?? product.tag === "Sale"),
+        sizeTemplateCategory: product.sizeTemplateCategory ?? null,
+        sizeTemplateId: product.sizeTemplateId ?? null,
       })
     )
   );
@@ -57,6 +61,8 @@ export async function seedProductsIfEmpty(products) {
     price: Number(product.price),
     tag: product.tag ?? null,
     isOffer: Boolean(product.isOffer ?? product.tag === "Sale"),
+    sizeTemplateCategory: product.sizeTemplateCategory ?? null,
+    sizeTemplateId: product.sizeTemplateId ?? null,
   }));
 }
 
@@ -69,6 +75,8 @@ export async function createProduct(product) {
     tag: product.tag ?? null,
     category: product.category ?? "Men",
     isOffer: Boolean(product.isOffer),
+    sizeTemplateCategory: product.sizeTemplateCategory ?? null,
+    sizeTemplateId: product.sizeTemplateId ?? null,
   };
 
   const newDoc = await addDoc(productsCollection, payload);
@@ -88,6 +96,8 @@ export async function editProduct(id, product) {
     tag: product.tag ?? null,
     category: product.category ?? "Men",
     isOffer: Boolean(product.isOffer),
+    sizeTemplateCategory: product.sizeTemplateCategory ?? null,
+    sizeTemplateId: product.sizeTemplateId ?? null,
   };
 
   await setDoc(doc(productsCollection, String(id)), payload, { merge: true });

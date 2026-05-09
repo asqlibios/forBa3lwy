@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { getProductDisplayName, isOfferProduct } from "../data/products";
 import { TAG_COLORS } from "../data/shop";
+import {
+  getProductMeasurementKeys,
+  getProductSizingMode,
+  getTemplateCategoryLabel,
+} from "../data/sizing";
 
 const IMAGE_FALLBACK =
   "https://placehold.co/600x750/f3f4f6/374151?text=Product";
@@ -312,6 +317,7 @@ const SPEC_KEY_LABELS = {
 
 export default function ProductPage({
   product,
+  sizeTemplates = [],
   onBack,
   addToCart,
   inCart,
@@ -325,6 +331,10 @@ export default function ProductPage({
   const specLabels = SPEC_KEY_LABELS[language] || SPEC_KEY_LABELS.ar;
   const productName = getProductDisplayName(product, language);
   const displayTag = isOfferProduct(product) ? "Sale" : product.tag;
+  const sizingMode = getProductSizingMode(product);
+  const linkedTemplate = sizeTemplates.find(
+    (template) => String(template.id) === String(product.sizeTemplateId)
+  );
 
   const baseSpecs = PRODUCT_SPECS[product.id] || {
     sizes: [{ label: "One Size" }],
@@ -338,11 +348,28 @@ export default function ProductPage({
     language === "ar"
       ? { ...baseSpecs, ...PRODUCT_SPEC_TRANSLATIONS[String(product.id)] }
       : baseSpecs;
+  const resolvedSizes =
+    sizingMode === "shirt" || sizingMode === "pants"
+      ? linkedTemplate?.sizes?.length
+        ? linkedTemplate.sizes
+        : baseSpecs.sizes
+      : specs.sizes;
+  const sizeKeys = getProductMeasurementKeys(
+    resolvedSizes,
+    linkedTemplate?.measurementKeys || []
+  );
+  const requiresSizeSelection = resolvedSizes.length > 1;
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    setSelectedSize(null);
+    setQty(1);
+    setAdded(false);
+  }, [product.id]);
 
   const handleBack = () => {
     setVisible(false);
@@ -350,15 +377,11 @@ export default function ProductPage({
   };
 
   const handleAdd = () => {
-    if (!selectedSize && specs.sizes.length > 1) return;
-    addToCart({ ...product, size: selectedSize || specs.sizes[0].label }, qty);
+    if (!selectedSize && requiresSizeSelection) return;
+    addToCart({ ...product, size: selectedSize || resolvedSizes[0]?.label }, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
-
-  const sizeKeys = specs.sizes[0]
-    ? Object.keys(specs.sizes[0]).filter((k) => k !== "label")
-    : [];
 
   return (
     <div
@@ -427,6 +450,15 @@ export default function ProductPage({
 
           <p className="leading-relaxed text-gray-600">{specs.description}</p>
 
+          {(sizingMode === "shirt" || sizingMode === "pants") && linkedTemplate && (
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <span className="font-semibold">Template:</span> {linkedTemplate.name}
+              <span className="mx-2 text-gray-300">|</span>
+              <span className="font-semibold">Category:</span>{" "}
+              {getTemplateCategoryLabel(linkedTemplate.category, language)}
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-3">
             {[
               { icon: "🧵", label: copy.material, value: specs.material },
@@ -451,14 +483,14 @@ export default function ProductPage({
           <div>
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-bold tracking-wide">{copy.selectSize}</p>
-              {specs.sizes.length > 1 && !selectedSize && (
+              {requiresSizeSelection && !selectedSize && (
                 <p className="text-xs font-medium text-red-400">
                   {copy.selectSizeHint}
                 </p>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              {specs.sizes.map((s) => (
+              {resolvedSizes.map((s) => (
                 <button
                   key={s.label}
                   onClick={() => setSelectedSize(s.label)}
@@ -492,7 +524,7 @@ export default function ProductPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {specs.sizes.map((s, i) => (
+                    {resolvedSizes.map((s, i) => (
                       <tr
                         key={s.label}
                         onClick={() => setSelectedSize(s.label)}
@@ -544,11 +576,11 @@ export default function ProductPage({
 
           <button
             onClick={handleAdd}
-            disabled={specs.sizes.length > 1 && !selectedSize}
+            disabled={requiresSizeSelection && !selectedSize}
             className={`w-full rounded-2xl py-4 text-base font-extrabold tracking-wide transition-all duration-200 ${
               added
                 ? "scale-95 bg-green-500 text-white"
-                : specs.sizes.length > 1 && !selectedSize
+                : requiresSizeSelection && !selectedSize
                 ? "cursor-not-allowed bg-gray-200 text-gray-400"
                 : "bg-black text-white hover:scale-[1.02] hover:bg-gray-800 active:scale-95"
             }`}

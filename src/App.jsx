@@ -10,6 +10,7 @@ import AdminPage from "./pages/AdminPage";
 import AdminOrders from "./pages/AdminOrders";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminHeroPage from "./pages/AdminHeroPage";
+import AdminSizeTemplatesPage from "./pages/AdminSizeTemplatesPage";
 import { PRODUCTS as INITIAL_PRODUCTS, isOfferProduct } from "./data/products";
 import { productMatchesQuery } from "./data/shop";
 import {
@@ -29,6 +30,12 @@ import {
   removeProduct,
   seedProductsIfEmpty,
 } from "./services/products";
+import {
+  createSizeTemplate,
+  editSizeTemplate,
+  fetchSizeTemplates,
+  removeSizeTemplate,
+} from "./services/sizeTemplates";
 import {
   createHeroSlide,
   editHeroSlide,
@@ -79,11 +86,14 @@ export default function App() {
   const [page, setPage] = useState("shop");
   const [adminSection, setAdminSection] = useState("products");
   const [products, setProducts] = useState([]);
+  const [sizeTemplates, setSizeTemplates] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [route, setRoute] = useState(getRouteFromLocation);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingSizeTemplates, setIsLoadingSizeTemplates] = useState(true);
   const [isLoadingHeroSlides, setIsLoadingHeroSlides] = useState(true);
   const [productsError, setProductsError] = useState("");
+  const [sizeTemplatesError, setSizeTemplatesError] = useState("");
   const [heroSlidesError, setHeroSlidesError] = useState("");
   const [adminUser, setAdminUser] = useState(null);
   const [isCheckingAdminAuth, setIsCheckingAdminAuth] = useState(true);
@@ -160,6 +170,41 @@ export default function App() {
     }
 
     loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSizeTemplates() {
+      try {
+        setIsLoadingSizeTemplates(true);
+        setSizeTemplatesError("");
+        const templates = await fetchSizeTemplates();
+
+        if (isMounted) {
+          setSizeTemplates(templates);
+        }
+      } catch (error) {
+        console.error("Failed to load size templates from Firestore:", error);
+
+        if (isMounted) {
+          setSizeTemplates([]);
+          setSizeTemplatesError(
+            "Unable to load size templates from Firebase right now."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSizeTemplates(false);
+        }
+      }
+    }
+
+    loadSizeTemplates();
 
     return () => {
       isMounted = false;
@@ -330,12 +375,15 @@ export default function App() {
   const addToCart = (product, qty) => {
     setCart((prev) => {
       const exists = prev.find(
-        (item) => String(item.id) === String(product.id)
+        (item) =>
+          String(item.id) === String(product.id) &&
+          String(item.size ?? "") === String(product.size ?? "")
       );
 
       if (exists) {
         return prev.map((item) =>
-          String(item.id) === String(product.id)
+          String(item.id) === String(product.id) &&
+          String(item.size ?? "") === String(product.size ?? "")
             ? { ...item, qty: item.qty + qty }
             : item
         );
@@ -345,23 +393,34 @@ export default function App() {
     });
   };
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => String(item.id) !== String(id)));
+  const removeFromCart = (id, size = "") => {
+    setCart((prev) =>
+      prev.filter(
+        (item) =>
+          !(
+            String(item.id) === String(id) &&
+            String(item.size ?? "") === String(size)
+          )
+      )
+    );
   };
 
   const clearCart = () => {
     setCart([]);
   };
 
-  const updateQty = (id, qty) => {
+  const updateQty = (id, size, qty) => {
     if (qty < 1) {
-      removeFromCart(id);
+      removeFromCart(id, size);
       return;
     }
 
     setCart((prev) =>
       prev.map((item) =>
-        String(item.id) === String(id) ? { ...item, qty } : item
+        String(item.id) === String(id) &&
+        String(item.size ?? "") === String(size)
+          ? { ...item, qty }
+          : item
       )
     );
   };
@@ -392,6 +451,34 @@ export default function App() {
   const handleDeleteProduct = async (id) => {
     await removeProduct(id);
     setProducts((prev) => prev.filter((item) => String(item.id) !== String(id)));
+  };
+
+  const handleCreateSizeTemplate = async (template) => {
+    const savedTemplate = await createSizeTemplate(template);
+    setSizeTemplates((prev) => [...prev, savedTemplate]);
+    return savedTemplate;
+  };
+
+  const handleUpdateSizeTemplate = async (id, template) => {
+    const savedTemplate = await editSizeTemplate(id, template);
+    setSizeTemplates((prev) =>
+      prev.map((item) => (String(item.id) === String(id) ? savedTemplate : item))
+    );
+    return savedTemplate;
+  };
+
+  const handleDeleteSizeTemplate = async (id) => {
+    await removeSizeTemplate(id);
+    setSizeTemplates((prev) =>
+      prev.filter((item) => String(item.id) !== String(id))
+    );
+    setProducts((prev) =>
+      prev.map((product) =>
+        String(product.sizeTemplateId) === String(id)
+          ? { ...product, sizeTemplateId: null, sizeTemplateCategory: null }
+          : product
+      )
+    );
   };
 
   const handleCreateHeroSlide = async (slide) => {
@@ -534,6 +621,16 @@ export default function App() {
                 Hero Offers
               </button>
               <button
+                onClick={() => setAdminSection("sizes")}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                  adminSection === "sizes"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                Size Templates
+              </button>
+              <button
                 onClick={() => {
                   setAdminSection("orders");
                   markOrdersAsSeen();
@@ -580,11 +677,22 @@ export default function App() {
         {adminSection === "products" ? (
           <AdminPage
             products={products}
+            sizeTemplates={sizeTemplates}
             isLoading={isLoadingProducts}
             error={productsError}
             onCreateProduct={handleCreateProduct}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
+          />
+        ) : adminSection === "sizes" ? (
+          <AdminSizeTemplatesPage
+            templates={sizeTemplates}
+            products={products}
+            isLoading={isLoadingSizeTemplates}
+            error={sizeTemplatesError}
+            onCreateTemplate={handleCreateSizeTemplate}
+            onUpdateTemplate={handleUpdateSizeTemplate}
+            onDeleteTemplate={handleDeleteSizeTemplate}
           />
         ) : adminSection === "hero" ? (
           <AdminHeroPage
@@ -643,6 +751,7 @@ export default function App() {
       ) : route.name === "product" && selectedProduct ? (
         <ProductPage
           product={selectedProduct}
+          sizeTemplates={sizeTemplates}
           onBack={backToShop}
           addToCart={addToCart}
           language={language}

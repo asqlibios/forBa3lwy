@@ -89,14 +89,14 @@ function CartDrawer({
 
                 <div className="flex items-center gap-2 mt-1">
                   <button
-                    onClick={() => updateQty(item.id, item.qty - 1)}
+                    onClick={() => updateQty(item.id, item.size ?? "", item.qty - 1)}
                     className="w-6 h-6 border rounded text-sm flex items-center justify-center hover:bg-gray-100 transition-colors"
                   >
                     -
                   </button>
                   <span className="text-sm w-4 text-center">{item.qty}</span>
                   <button
-                    onClick={() => updateQty(item.id, item.qty + 1)}
+                    onClick={() => updateQty(item.id, item.size ?? "", item.qty + 1)}
                     className="w-6 h-6 border rounded text-sm flex items-center justify-center hover:bg-gray-100 transition-colors"
                   >
                     +
@@ -108,8 +108,13 @@ function CartDrawer({
                 <p className="font-bold text-sm">
                   {formatCurrency(item.price * item.qty)}
                 </p>
+                {item.size && (
+                  <p className="text-xs text-gray-400">
+                    {language === "ar" ? "المقاس" : "Size"}: {item.size}
+                  </p>
+                )}
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.id, item.size ?? "")}
                   className="text-xs text-gray-400 hover:text-red-500 transition-colors duration-150"
                 >
                   {language === "ar" ? "حذف" : "Remove"}
