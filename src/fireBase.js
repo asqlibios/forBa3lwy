@@ -13,9 +13,11 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const adminApp = initializeApp(firebaseConfig, "admin-auth");
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const adminAuth = getAuth(adminApp);
 export const messagingSupportPromise = isSupported().catch(() => false);
 const messagingSupported = await messagingSupportPromise;
 export const messaging = messagingSupported ? getMessaging(app) : null;

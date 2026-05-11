@@ -6,21 +6,10 @@ import {
   signOut,
   updateProfile,
 } from "firebase/auth";
-import { adminAuth, auth } from "../fireBase";
-
-const ADMIN_EMAILS = new Set([
-  "asqlibiosagain@gmail.com",
-  "ffdwb3ff@gmail.com",
-]);
-
-export function isAllowedAdminEmail(email) {
-  return ADMIN_EMAILS.has(String(email || "").trim().toLowerCase());
-}
+import { auth } from "../fireBase";
 
 export function subscribeToAdminAuth(callback) {
-  return onAuthStateChanged(adminAuth, (user) => {
-    callback(isAllowedAdminEmail(user?.email) ? user : null);
-  });
+  return onAuthStateChanged(auth, callback);
 }
 
 export function subscribeToAuth(callback) {
@@ -28,17 +17,7 @@ export function subscribeToAuth(callback) {
 }
 
 export async function signInAdmin(email, password) {
-  const credentials = await signInWithEmailAndPassword(
-    adminAuth,
-    email,
-    password
-  );
-
-  if (!isAllowedAdminEmail(credentials.user?.email)) {
-    await signOut(adminAuth);
-    throw new Error("This account is not allowed to access the admin panel.");
-  }
-
+  const credentials = await signInWithEmailAndPassword(auth, email, password);
   return credentials.user;
 }
 
@@ -68,7 +47,7 @@ export async function sendUserPasswordReset(email) {
 }
 
 export async function signOutAdmin() {
-  await signOut(adminAuth);
+  await signOut(auth);
 }
 
 export async function signOutUser() {

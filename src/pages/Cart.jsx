@@ -3,6 +3,63 @@ import { createOrder } from "../services/orders";
 
 const WHATSAPP_NUMBER = "734743477";
 
+const COPY = {
+  ar: {
+    cart: "السلة",
+    empty: "السلة فارغة",
+    items: "منتج",
+    remove: "حذف",
+    size: "المقاس",
+    total: "المجموع",
+    reviewOrder: "مراجعة الطلب",
+    backToCart: "رجوع للسلة",
+    close: "إغلاق",
+    invoice: "تأكيد الطلب",
+    accountDetails: "بيانات الحساب",
+    orderSummary: "ملخص الطلب",
+    whatsappConfirm: "تأكيد عبر واتساب",
+    whatsappHint:
+      "سيتم حفظ الطلب في لوحة الأدمن ثم فتح واتساب لتأكيد الطلب مباشرة.",
+    itemCount: "عدد القطع",
+    placeOrder: "تأكيد الطلب",
+    placingOrder: "جارٍ حفظ الطلب...",
+    successTitle: "تم إرسال طلبك بنجاح",
+    successBody:
+      "تم تأكيد الطلب وإفراغ السلة. سيتم فتح واتساب لإكمال الإرسال مباشرة.",
+    signInRequired: "لازم تسجل دخول عشان تطلب.",
+    completeAccount: "أكمل بيانات حسابك أولًا قبل تنفيذ الطلب.",
+    openAccount: "فتح حسابي",
+    inCart: "في السلة",
+  },
+  en: {
+    cart: "Cart",
+    empty: "Your cart is empty",
+    items: "items",
+    remove: "Remove",
+    size: "Size",
+    total: "Total",
+    reviewOrder: "Review Order",
+    backToCart: "Back to Cart",
+    close: "Close",
+    invoice: "Confirm Order",
+    accountDetails: "Account Details",
+    orderSummary: "Order Summary",
+    whatsappConfirm: "Confirm by WhatsApp",
+    whatsappHint:
+      "The order will be saved in the admin dashboard, then WhatsApp will open for confirmation.",
+    itemCount: "Items count",
+    placeOrder: "Place Order",
+    placingOrder: "Saving order...",
+    successTitle: "Your order has been sent successfully",
+    successBody:
+      "The order was confirmed and the cart was cleared. WhatsApp will open to complete the send.",
+    signInRequired: "You need to sign in before placing an order.",
+    completeAccount: "Complete your account details before placing an order.",
+    openAccount: "Open My Account",
+    inCart: "In Cart",
+  },
+};
+
 function formatCurrency(value) {
   return `SAR ${Number(value).toFixed(2)}`;
 }
@@ -10,94 +67,104 @@ function formatCurrency(value) {
 function buildWhatsAppMessage(customer, cart, total) {
   const lines = cart.map((item) => {
     const qtyText = item.qty > 1 ? ` x${item.qty}` : "";
-    const sizeText = item.size ? ` - المقاس: ${item.size}` : "";
+    const sizeText = item.size ? ` - Size: ${item.size}` : "";
     return `${item.name}${qtyText}${sizeText} - ${formatCurrency(
       item.price * item.qty
     )}`;
   });
 
   return [
-    `${customer.name} طلب:`,
+    `${customer.fullName} order:`,
     "",
-    `الاسم: ${customer.name}`,
-    `الرقم: ${customer.phone}`,
-    `المدينة: ${customer.city}`,
-    `العنوان: ${customer.address}`,
-    customer.notes ? `معلومات إضافية: ${customer.notes}` : null,
+    `Name: ${customer.fullName}`,
+    `Phone: ${customer.phone}`,
+    `City: ${customer.city}`,
+    `Address: ${customer.address}`,
+    customer.notes ? `Notes: ${customer.notes}` : null,
     "",
     ...lines,
     "",
-    `المجموع: ${formatCurrency(total)}`,
+    `Total: ${formatCurrency(total)}`,
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function isAccountComplete(profile) {
+  return Boolean(
+    profile?.fullName?.trim() &&
+      profile?.phone?.trim() &&
+      profile?.city?.trim() &&
+      profile?.address?.trim()
+  );
 }
 
 function CartDrawer({
   cart,
   onClose,
   onProceed,
+  onOpenAccount,
   removeFromCart,
   updateQty,
   total,
-  language = "ar",
+  language,
+  checkoutError,
 }) {
+  const copy = COPY[language] || COPY.en;
+
   return (
     <div dir={language === "ar" ? "rtl" : "ltr"} className="flex h-full flex-col">
-      <div className="flex justify-between items-center px-5 py-4 border-b">
+      <div className="flex items-center justify-between border-b px-5 py-4">
         <h2 className="text-xl font-extrabold tracking-tight">
-          {language === "ar" ? "السلة" : "Cart"}
+          {copy.cart}
           {cart.length > 0 && (
             <span className="ml-2 text-sm font-normal text-gray-400">
-              ({cart.reduce((sum, item) => sum + item.qty, 0)}{" "}
-              {language === "ar" ? "منتج" : "items"})
+              ({cart.reduce((sum, item) => sum + item.qty, 0)} {copy.items})
             </span>
           )}
         </h2>
         <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-black transition-all duration-150"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-black"
         >
           x
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
-            <p className="font-medium">
-              {language === "ar" ? "السلة فارغة" : "Your cart is empty"}
-            </p>
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-400">
+            <p className="font-medium">{copy.empty}</p>
           </div>
         ) : (
           cart.map((item, index) => (
             <div
               key={`${item.id}-${item.size ?? "default"}`}
-              className="flex gap-3 items-center border-b pb-4"
+              className="flex items-center gap-3 border-b pb-4"
               style={{ animation: `fadeIn 0.25s ease ${index * 60}ms both` }}
             >
               <img
                 src={item.img}
                 alt={item.name}
-                className="w-16 h-16 rounded-lg object-cover border"
+                className="h-16 w-16 rounded-lg border object-cover"
               />
               <div className="flex-1">
-                <p className="font-semibold text-sm">{item.name}</p>
-                <p className="text-red-500 font-bold text-sm">
+                <p className="text-sm font-semibold">{item.name}</p>
+                <p className="text-sm font-bold text-red-500">
                   {formatCurrency(item.price)}
                 </p>
 
-                <div className="flex items-center gap-2 mt-1">
+                <div className="mt-1 flex items-center gap-2">
                   <button
                     onClick={() => updateQty(item.id, item.size ?? "", item.qty - 1)}
-                    className="w-6 h-6 border rounded text-sm flex items-center justify-center hover:bg-gray-100 transition-colors"
+                    className="flex h-6 w-6 items-center justify-center rounded border text-sm transition-colors hover:bg-gray-100"
                   >
                     -
                   </button>
-                  <span className="text-sm w-4 text-center">{item.qty}</span>
+                  <span className="w-4 text-center text-sm">{item.qty}</span>
                   <button
                     onClick={() => updateQty(item.id, item.size ?? "", item.qty + 1)}
-                    className="w-6 h-6 border rounded text-sm flex items-center justify-center hover:bg-gray-100 transition-colors"
+                    className="flex h-6 w-6 items-center justify-center rounded border text-sm transition-colors hover:bg-gray-100"
                   >
                     +
                   </button>
@@ -105,19 +172,19 @@ function CartDrawer({
               </div>
 
               <div className="flex flex-col items-end gap-1">
-                <p className="font-bold text-sm">
+                <p className="text-sm font-bold">
                   {formatCurrency(item.price * item.qty)}
                 </p>
                 {item.size && (
                   <p className="text-xs text-gray-400">
-                    {language === "ar" ? "المقاس" : "Size"}: {item.size}
+                    {copy.size}: {item.size}
                   </p>
                 )}
                 <button
                   onClick={() => removeFromCart(item.id, item.size ?? "")}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors duration-150"
+                  className="text-xs text-gray-400 transition-colors duration-150 hover:text-red-500"
                 >
-                  {language === "ar" ? "حذف" : "Remove"}
+                  {copy.remove}
                 </button>
               </div>
             </div>
@@ -126,16 +193,30 @@ function CartDrawer({
       </div>
 
       {cart.length > 0 && (
-        <div className="px-5 py-4 border-t bg-gray-50 space-y-3">
-          <div className="flex justify-between font-extrabold text-lg">
-            <span>المجموع</span>
+        <div className="space-y-3 border-t bg-gray-50 px-5 py-4">
+          {checkoutError && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p>{checkoutError}</p>
+              {onOpenAccount && (
+                <button
+                  type="button"
+                  onClick={onOpenAccount}
+                  className="mt-3 rounded-full bg-black px-4 py-2 text-xs font-bold text-white transition hover:bg-gray-800"
+                >
+                  {copy.openAccount}
+                </button>
+              )}
+            </div>
+          )}
+          <div className="flex justify-between text-lg font-extrabold">
+            <span>{copy.total}</span>
             <span>{formatCurrency(total)}</span>
           </div>
           <button
             onClick={onProceed}
-            className="w-full bg-black text-white py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 active:scale-95 transition-all duration-150"
+            className="w-full rounded-xl bg-black py-3 text-sm font-semibold text-white transition-all duration-150 hover:bg-gray-800 active:scale-95"
           >
-            عرض الفاتورة
+            {copy.reviewOrder}
           </button>
         </div>
       )}
@@ -145,16 +226,16 @@ function CartDrawer({
 
 function InvoicePage({
   cart,
-  customer,
-  errors,
+  profile,
   total,
   isSubmitting,
   submitError,
   onBack,
-  onChange,
   onConfirm,
   onClose,
+  language,
 }) {
+  const copy = COPY[language] || COPY.en;
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
   return (
@@ -166,103 +247,72 @@ function InvoicePage({
               onClick={onBack}
               className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-              رجوع للسلة
+              {copy.backToCart}
             </button>
             <button
               onClick={onClose}
               className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-              إغلاق
+              {copy.close}
             </button>
           </div>
-          <h2 className="text-2xl font-black text-gray-900">تفاصيل الفاتورة</h2>
+          <h2 className="text-2xl font-black text-gray-900">{copy.invoice}</h2>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] items-start" dir="rtl">
+        <div className="grid items-start gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <section className="rounded-[28px] bg-white/70 p-5 shadow-sm ring-1 ring-black/5">
             <h3 className="mb-5 text-xl font-bold text-gray-900">
-              بيانات العميل
+              {copy.accountDetails}
             </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  الاسم
-                </label>
-                <input
-                  value={customer.name}
-                  onChange={(event) => onChange("name", event.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-900"
-                  placeholder="ادخل الاسم"
-                />
-                {errors.name && (
-                  <p className="mt-1 text-xs text-red-600">{errors.name}</p>
-                )}
+              <div className="rounded-2xl bg-white px-4 py-4">
+                <p className="text-xs font-bold uppercase text-gray-400">Name</p>
+                <p className="mt-2 text-sm font-semibold text-gray-900">
+                  {profile.fullName}
+                </p>
               </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  الرقم
-                </label>
-                <input
-                  value={customer.phone}
-                  onChange={(event) => onChange("phone", event.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-900"
-                  placeholder="ادخل رقم هاتفك"
-                />
-                {errors.phone && (
-                  <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
-                )}
+              <div className="rounded-2xl bg-white px-4 py-4">
+                <p className="text-xs font-bold uppercase text-gray-400">Phone</p>
+                <p className="mt-2 text-sm font-semibold text-gray-900">
+                  {profile.phone}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-4">
+                <p className="text-xs font-bold uppercase text-gray-400">City</p>
+                <p className="mt-2 text-sm font-semibold text-gray-900">
+                  {profile.city}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-4">
+                <p className="text-xs font-bold uppercase text-gray-400">Email</p>
+                <p className="mt-2 text-sm font-semibold text-gray-900">
+                  {profile.email}
+                </p>
               </div>
             </div>
 
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                المدينة
-              </label>
-              <input
-                value={customer.city}
-                onChange={(event) => onChange("city", event.target.value)}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-900"
-                placeholder="ادخل المدينة"
-              />
-              {errors.city && (
-                <p className="mt-1 text-xs text-red-600">{errors.city}</p>
-              )}
+            <div className="mt-4 rounded-2xl bg-white px-4 py-4">
+              <p className="text-xs font-bold uppercase text-gray-400">Address</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-gray-900">
+                {profile.address}
+              </p>
             </div>
 
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                العنوان
-              </label>
-              <textarea
-                value={customer.address}
-                onChange={(event) => onChange("address", event.target.value)}
-                rows={4}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-900 resize-none"
-                placeholder="اكتب العنوان بالتفصيل"
-              />
-              {errors.address && (
-                <p className="mt-1 text-xs text-red-600">{errors.address}</p>
-              )}
-            </div>
-
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-semibold text-gray-700">
-                معلومات إضافية (اختياري)
-              </label>
-              <textarea
-                value={customer.notes}
-                onChange={(event) => onChange("notes", event.target.value)}
-                rows={4}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-gray-900 resize-none"
-                placeholder="أي تفاصيل إضافية تحب تضيفها"
-              />
-            </div>
+            {profile.notes && (
+              <div className="mt-4 rounded-2xl bg-white px-4 py-4">
+                <p className="text-xs font-bold uppercase text-gray-400">Notes</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-gray-900">
+                  {profile.notes}
+                </p>
+              </div>
+            )}
           </section>
 
           <section className="rounded-[28px] bg-[#f4ece4] p-5 shadow-sm ring-1 ring-black/5 lg:sticky lg:top-6">
-            <h3 className="mb-4 text-lg font-bold text-gray-900">تأكيد الطلب</h3>
+            <h3 className="mb-4 text-lg font-bold text-gray-900">
+              {copy.orderSummary}
+            </h3>
 
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <div className="space-y-4">
@@ -281,8 +331,8 @@ function InvoicePage({
                         {item.name}
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
-                        الكمية: {item.qty}
-                        {item.size ? ` | المقاس: ${item.size}` : ""}
+                        Qty: {item.qty}
+                        {item.size ? ` | ${copy.size}: ${item.size}` : ""}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-gray-900">
@@ -294,19 +344,7 @@ function InvoicePage({
 
               <div className="mt-5 space-y-3 border-t border-gray-200 pt-4 text-sm">
                 <div className="flex items-center justify-between text-gray-700">
-                  <span>سلة التسوق</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
-                <div className="flex items-center justify-between text-gray-700">
-                  <span>خصم</span>
-                  <span>{formatCurrency(0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-gray-700">
-                  <span>تكلفة التوصيل</span>
-                  <span>{formatCurrency(0)}</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-black text-gray-900">
-                  <span>المجموع</span>
+                  <span>{copy.total}</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
               </div>
@@ -316,9 +354,11 @@ function InvoicePage({
               <div className="rounded-2xl bg-white px-4 py-4 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-gray-900">تأكيد عبر واتساب</p>
+                    <p className="font-semibold text-gray-900">
+                      {copy.whatsappConfirm}
+                    </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      سيتم حفظ الفاتورة في لوحة الأدمن ثم فتح واتساب للتأكيد
+                      {copy.whatsappHint}
                     </p>
                   </div>
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white">
@@ -327,9 +367,9 @@ function InvoicePage({
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-white px-4 py-4 shadow-sm text-sm text-gray-600">
+              <div className="rounded-2xl bg-white px-4 py-4 text-sm text-gray-600 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span>عدد القطع</span>
+                  <span>{copy.itemCount}</span>
                   <span className="font-semibold text-gray-900">{itemCount}</span>
                 </div>
               </div>
@@ -345,7 +385,7 @@ function InvoicePage({
                 disabled={isSubmitting}
                 className="w-full rounded-2xl bg-[#3f6f9f] py-4 text-base font-bold text-white transition-all duration-150 hover:bg-[#345f88] active:scale-[0.99] disabled:opacity-60"
               >
-                {isSubmitting ? "جاري حفظ الطلب..." : "تأكيد الطلب"}
+                {isSubmitting ? copy.placingOrder : copy.placeOrder}
               </button>
             </div>
           </section>
@@ -355,7 +395,9 @@ function InvoicePage({
   );
 }
 
-function SuccessPage({ onClose }) {
+function SuccessPage({ onClose, language }) {
+  const copy = COPY[language] || COPY.en;
+
   return (
     <div className="min-h-full bg-[#f7f1eb]">
       <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4 py-8">
@@ -364,16 +406,14 @@ function SuccessPage({ onClose }) {
             ✓
           </div>
           <h2 className="mt-5 text-2xl font-black text-gray-900">
-            تم إرسال طلبك بنجاح
+            {copy.successTitle}
           </h2>
-          <p className="mt-3 text-sm text-gray-600">
-            تم تأكيد الطلب وإفراغ السلة. سيتم فتح واتساب لإكمال الإرسال مباشرة.
-          </p>
+          <p className="mt-3 text-sm text-gray-600">{copy.successBody}</p>
           <button
             onClick={onClose}
             className="mt-6 rounded-2xl bg-black px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800"
           >
-            إغلاق
+            {copy.close}
           </button>
         </div>
       </div>
@@ -387,20 +427,18 @@ export default function Cart({
   removeFromCart,
   updateQty,
   clearCart,
+  currentUser = null,
+  accountProfile = null,
+  onRequireAuth,
+  onOpenAccount,
   language = "ar",
 }) {
+  const copy = COPY[language] || COPY.en;
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState("cart");
-  const [customer, setCustomer] = useState({
-    name: "",
-    phone: "",
-    city: "",
-    address: "",
-    notes: "",
-  });
-  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -416,30 +454,31 @@ export default function Cart({
     setTimeout(onClose, 300);
   };
 
-  const handleCustomerChange = (field, value) => {
-    setCustomer((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "" }));
-    setSubmitError("");
-  };
-
   const handleProceed = () => {
+    setCheckoutError("");
+
+    if (!currentUser) {
+      handleClose();
+      onRequireAuth?.();
+      return;
+    }
+
+    if (!isAccountComplete(accountProfile)) {
+      setCheckoutError(copy.completeAccount);
+      return;
+    }
+
     setStep("invoice");
   };
 
   const handleBackToCart = () => {
     setStep("cart");
+    setSubmitError("");
   };
 
   const handleConfirmOrder = async () => {
-    const nextErrors = {};
-
-    if (!customer.name.trim()) nextErrors.name = "الاسم مطلوب";
-    if (!customer.phone.trim()) nextErrors.phone = "الرقم مطلوب";
-    if (!customer.city.trim()) nextErrors.city = "المدينة مطلوبة";
-    if (!customer.address.trim()) nextErrors.address = "العنوان مطلوب";
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
+    if (!currentUser || !isAccountComplete(accountProfile)) {
+      setSubmitError(copy.completeAccount);
       return;
     }
 
@@ -448,7 +487,9 @@ export default function Cart({
       setSubmitError("");
 
       await createOrder({
-        ...customer,
+        ...accountProfile,
+        userId: currentUser.uid,
+        userEmail: currentUser.email || "",
         products: cart.map((item) => ({
           id: item.id,
           name: item.name,
@@ -461,7 +502,7 @@ export default function Cart({
         paymentMethod: "WhatsApp",
       });
 
-      const message = buildWhatsAppMessage(customer, cart, total);
+      const message = buildWhatsAppMessage(accountProfile, cart, total);
       const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
         message
       )}`;
@@ -470,7 +511,11 @@ export default function Cart({
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
       console.error("Failed to create order:", error);
-      setSubmitError("تعذر حفظ الطلب الآن. حاول مرة ثانية.");
+      setSubmitError(
+        language === "ar"
+          ? "تعذر حفظ الطلب الآن. حاول مرة ثانية."
+          : "Unable to save the order right now. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -496,25 +541,24 @@ export default function Cart({
         <div className="min-h-full">
           <InvoicePage
             cart={cart}
-            customer={customer}
-            errors={errors}
+            profile={accountProfile}
             total={total}
             isSubmitting={isSubmitting}
             submitError={submitError}
             onBack={handleBackToCart}
-            onChange={handleCustomerChange}
             onConfirm={handleConfirmOrder}
             onClose={handleClose}
+            language={language}
           />
         </div>
       ) : step === "success" ? (
         <div className="min-h-full">
-          <SuccessPage onClose={handleClose} />
+          <SuccessPage onClose={handleClose} language={language} />
         </div>
       ) : (
         <div className="absolute inset-y-0 right-0 flex h-full" dir="ltr">
           <div
-            className="bg-white h-full w-96 max-w-full flex flex-col shadow-2xl"
+            className="flex h-full w-96 max-w-full flex-col bg-white shadow-2xl"
             style={{
               transform: visible ? "translateX(0)" : "translateX(100%)",
               transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
@@ -524,10 +568,15 @@ export default function Cart({
               cart={cart}
               onClose={handleClose}
               onProceed={handleProceed}
+              onOpenAccount={() => {
+                handleClose();
+                onOpenAccount?.();
+              }}
               removeFromCart={removeFromCart}
               updateQty={updateQty}
               total={total}
               language={language}
+              checkoutError={checkoutError}
             />
           </div>
         </div>

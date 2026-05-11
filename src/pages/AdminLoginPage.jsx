@@ -24,7 +24,10 @@ export default function AdminLoginPage({
       await onLogin(email.trim(), password);
     } catch (loginError) {
       console.error("Admin sign-in failed:", loginError);
-      setError("Login failed. Check the admin account details in Firebase.");
+      setError(
+        loginError?.message ||
+          "Login failed. Check the admin account details in Firebase."
+      );
     } finally {
       setIsSubmitting(false);
     }

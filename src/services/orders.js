@@ -7,6 +7,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
 import { db } from "../fireBase";
 
@@ -22,6 +23,8 @@ function normalizeOrder(docSnapshot) {
     city: data.city ?? "",
     address: data.address ?? "",
     notes: data.notes ?? "",
+    userId: data.userId ?? "",
+    userEmail: data.userEmail ?? "",
     products: Array.isArray(data.products) ? data.products : [],
     total: Number(data.total ?? 0),
     paymentMethod: data.paymentMethod ?? "WhatsApp",
@@ -36,6 +39,8 @@ export async function createOrder(order) {
     city: order.city ?? "",
     address: order.address,
     notes: order.notes ?? "",
+    userId: order.userId ?? "",
+    userEmail: order.userEmail ?? "",
     products: Array.isArray(order.products) ? order.products : [],
     total: Number(order.total ?? 0),
     paymentMethod: order.paymentMethod ?? "WhatsApp",
@@ -56,6 +61,23 @@ export async function removeOrder(id) {
 
 export function subscribeToOrders(callback) {
   const ordersQuery = query(ordersCollection, orderBy("createdAt", "desc"));
+
+  return onSnapshot(ordersQuery, (snapshot) => {
+    callback(snapshot.docs.map(normalizeOrder));
+  });
+}
+
+export function subscribeToOrdersByUser(userId, callback) {
+  if (!userId) {
+    callback([]);
+    return () => {};
+  }
+
+  const ordersQuery = query(
+    ordersCollection,
+    where("userId", "==", String(userId)),
+    orderBy("createdAt", "desc")
+  );
 
   return onSnapshot(ordersQuery, (snapshot) => {
     callback(snapshot.docs.map(normalizeOrder));

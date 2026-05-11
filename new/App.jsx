@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "./components/Navbar";
 import CategoryBar from "./components/CategoryBar";
 import Hero from "./components/Hero";
@@ -10,10 +10,7 @@ import AdminPage from "./pages/AdminPage";
 import AdminOrders from "./pages/AdminOrders";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminHeroPage from "./pages/AdminHeroPage";
-import AdminSizeTemplatesPage from "./pages/AdminSizeTemplatesPage";
 import AuthPage from "./pages/AuthPage";
-import AccountPage from "./pages/AccountPage";
-import FavoritesPage from "./pages/FavoritesPage";
 import { PRODUCTS as INITIAL_PRODUCTS, isOfferProduct } from "./data/products";
 import { productMatchesQuery } from "./data/shop";
 import {
@@ -39,90 +36,17 @@ import {
   seedProductsIfEmpty,
 } from "./services/products";
 import {
-  createSizeTemplate,
-  editSizeTemplate,
-  fetchSizeTemplates,
-  removeSizeTemplate,
-} from "./services/sizeTemplates";
-import {
   createHeroSlide,
   editHeroSlide,
   fetchHeroSlides,
   removeHeroSlide,
 } from "./services/heroSlides";
-import { subscribeToOrdersByUser } from "./services/orders";
-import {
-  saveUserProfile,
-  subscribeToUserProfile,
-} from "./services/userProfiles";
 
 const ORDERS_LAST_SEEN_KEY = "adminOrdersLastSeenAt";
 const LANGUAGE_KEY = "shopLanguage";
 const THEME_KEY = "shopTheme";
-const CART_STORAGE_KEY = "shopCart";
 const DEFAULT_SEARCH_CATEGORY = "All";
 const DEFAULT_SORT_OPTION = "relevance";
-
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M3 10.5 12 3l9 7.5" />
-      <path d="M5 9.5V21h14V9.5" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="11" cy="11" r="6" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
-}
-
-function CartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="9" cy="20" r="1" />
-      <circle cx="18" cy="20" r="1" />
-      <path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h9.8a1 1 0 0 0 1-.8L21 7H7" />
-    </svg>
-  );
-}
-
-function HeartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="m12 21-1.45-1.32C5.4 15.03 2 11.94 2 8.15 2 5.06 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.06 22 8.15c0 3.79-3.4 6.88-8.55 11.54L12 21Z" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c1.8-3.2 5-5 8-5s6.2 1.8 8 5" />
-    </svg>
-  );
-}
-
-function loadStoredCart() {
-  try {
-    const rawCart = localStorage.getItem(CART_STORAGE_KEY);
-
-    if (!rawCart) {
-      return [];
-    }
-
-    const parsedCart = JSON.parse(rawCart);
-    return Array.isArray(parsedCart) ? parsedCart : [];
-  } catch (error) {
-    console.error("Failed to restore cart from storage:", error);
-    return [];
-  }
-}
 
 function mergeWithLocalProducts(liveProducts, localProducts) {
   const liveIds = new Set(liveProducts.map((product) => String(product.id)));
@@ -145,19 +69,11 @@ function getRouteFromLocation() {
     return { name: "login" };
   }
 
-  if (path === "/account") {
-    return { name: "account" };
-  }
-
-  if (path === "/favorites") {
-    return { name: "favorites" };
-  }
-
   return { name: "shop" };
 }
 
 export default function App() {
-  const [cart, setCart] = useState(loadStoredCart);
+  const [cart, setCart] = useState([]);
   const [openCart, setOpenCart] = useState(false);
   const [searchFocusToken, setSearchFocusToken] = useState(0);
   const [language, setLanguage] = useState(
@@ -173,23 +89,17 @@ export default function App() {
   const [page, setPage] = useState("shop");
   const [adminSection, setAdminSection] = useState("products");
   const [products, setProducts] = useState([]);
-  const [sizeTemplates, setSizeTemplates] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
   const [route, setRoute] = useState(getRouteFromLocation);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [isLoadingSizeTemplates, setIsLoadingSizeTemplates] = useState(true);
   const [isLoadingHeroSlides, setIsLoadingHeroSlides] = useState(true);
   const [productsError, setProductsError] = useState("");
-  const [sizeTemplatesError, setSizeTemplatesError] = useState("");
   const [heroSlidesError, setHeroSlidesError] = useState("");
   const [adminUser, setAdminUser] = useState(null);
   const [authUser, setAuthUser] = useState(null);
-  const [accountProfile, setAccountProfile] = useState(null);
-  const [userOrders, setUserOrders] = useState([]);
   const [isCheckingAdminAuth, setIsCheckingAdminAuth] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isAuthBusy, setIsAuthBusy] = useState(false);
-  const [isSavingAccount, setIsSavingAccount] = useState(false);
   const [ordersUnreadCount, setOrdersUnreadCount] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsBusy, setNotificationsBusy] = useState(false);
@@ -215,10 +125,6 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
     const unsubscribe = subscribeToAdminAuth((user) => {
       setAdminUser(user);
       setIsCheckingAdminAuth(false);
@@ -234,22 +140,6 @@ export default function App() {
 
     return unsubscribe;
   }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToUserProfile(authUser, (profile) => {
-      setAccountProfile(profile);
-    });
-
-    return unsubscribe;
-  }, [authUser]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToOrdersByUser(authUser?.uid, (orders) => {
-      setUserOrders(orders);
-    });
-
-    return unsubscribe;
-  }, [authUser?.uid]);
 
   useEffect(() => {
     let isMounted = true;
@@ -290,41 +180,6 @@ export default function App() {
     }
 
     loadProducts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSizeTemplates() {
-      try {
-        setIsLoadingSizeTemplates(true);
-        setSizeTemplatesError("");
-        const templates = await fetchSizeTemplates();
-
-        if (isMounted) {
-          setSizeTemplates(templates);
-        }
-      } catch (error) {
-        console.error("Failed to load size templates from Firestore:", error);
-
-        if (isMounted) {
-          setSizeTemplates([]);
-          setSizeTemplatesError(
-            "Unable to load size templates from Firebase right now."
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingSizeTemplates(false);
-        }
-      }
-    }
-
-    loadSizeTemplates();
 
     return () => {
       isMounted = false;
@@ -388,8 +243,8 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = subscribeToForegroundMessages((payload) => {
       setNotificationToast({
-        title: payload.notification?.title || "ط·ظ„ط¨ ط¬ط¯ظٹط¯",
-        body: payload.notification?.body || "طھظ…طھ ط¥ط¶ط§ظپط© ط·ظ„ط¨ ط¬ط¯ظٹط¯.",
+        title: payload.notification?.title || "طلب جديد",
+        body: payload.notification?.body || "تمت إضافة طلب جديد.",
       });
 
       window.clearTimeout(subscribeToForegroundMessages.toastTimeoutId);
@@ -496,15 +351,12 @@ export default function App() {
   const addToCart = (product, qty) => {
     setCart((prev) => {
       const exists = prev.find(
-        (item) =>
-          String(item.id) === String(product.id) &&
-          String(item.size ?? "") === String(product.size ?? "")
+        (item) => String(item.id) === String(product.id)
       );
 
       if (exists) {
         return prev.map((item) =>
-          String(item.id) === String(product.id) &&
-          String(item.size ?? "") === String(product.size ?? "")
+          String(item.id) === String(product.id)
             ? { ...item, qty: item.qty + qty }
             : item
         );
@@ -514,34 +366,23 @@ export default function App() {
     });
   };
 
-  const removeFromCart = (id, size = "") => {
-    setCart((prev) =>
-      prev.filter(
-        (item) =>
-          !(
-            String(item.id) === String(id) &&
-            String(item.size ?? "") === String(size)
-          )
-      )
-    );
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((item) => String(item.id) !== String(id)));
   };
 
   const clearCart = () => {
     setCart([]);
   };
 
-  const updateQty = (id, size, qty) => {
+  const updateQty = (id, qty) => {
     if (qty < 1) {
-      removeFromCart(id, size);
+      removeFromCart(id);
       return;
     }
 
     setCart((prev) =>
       prev.map((item) =>
-        String(item.id) === String(id) &&
-        String(item.size ?? "") === String(size)
-          ? { ...item, qty }
-          : item
+        String(item.id) === String(id) ? { ...item, qty } : item
       )
     );
   };
@@ -572,34 +413,6 @@ export default function App() {
   const handleDeleteProduct = async (id) => {
     await removeProduct(id);
     setProducts((prev) => prev.filter((item) => String(item.id) !== String(id)));
-  };
-
-  const handleCreateSizeTemplate = async (template) => {
-    const savedTemplate = await createSizeTemplate(template);
-    setSizeTemplates((prev) => [...prev, savedTemplate]);
-    return savedTemplate;
-  };
-
-  const handleUpdateSizeTemplate = async (id, template) => {
-    const savedTemplate = await editSizeTemplate(id, template);
-    setSizeTemplates((prev) =>
-      prev.map((item) => (String(item.id) === String(id) ? savedTemplate : item))
-    );
-    return savedTemplate;
-  };
-
-  const handleDeleteSizeTemplate = async (id) => {
-    await removeSizeTemplate(id);
-    setSizeTemplates((prev) =>
-      prev.filter((item) => String(item.id) !== String(id))
-    );
-    setProducts((prev) =>
-      prev.map((product) =>
-        String(product.sizeTemplateId) === String(id)
-          ? { ...product, sizeTemplateId: null, sizeTemplateCategory: null }
-          : product
-      )
-    );
   };
 
   const handleCreateHeroSlide = async (slide) => {
@@ -659,20 +472,6 @@ export default function App() {
     await sendUserPasswordReset(email);
   };
 
-  const handleSaveAccountProfile = async (profile) => {
-    try {
-      setIsSavingAccount(true);
-      const savedProfile = await saveUserProfile(authUser, profile);
-      setAccountProfile((currentProfile) => ({
-        ...(currentProfile || {}),
-        ...savedProfile,
-        email: authUser?.email || savedProfile.email || "",
-      }));
-    } finally {
-      setIsSavingAccount(false);
-    }
-  };
-
   const handleAdminLogout = async () => {
     try {
       setIsSigningOut(true);
@@ -698,15 +497,15 @@ export default function App() {
       await enableAdminNotifications(adminUser);
       setNotificationsEnabled(true);
       setNotificationToast({
-        title: "ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ ظ…ظپط¹ظ„ط©",
-        body: "ط³ظٹطµظ„ظƒ طھظ†ط¨ظٹظ‡ ط¹ظ†ط¯ ظˆطµظˆظ„ ط·ظ„ط¨ ط¬ط¯ظٹط¯.",
+        title: "الإشعارات مفعلة",
+        body: "سيصلك تنبيه عند وصول طلب جديد.",
       });
     } catch (error) {
       console.error("Failed to enable notifications:", error);
       setNotificationsError(
         error.message === "Missing VITE_FIREBASE_VAPID_KEY."
-          ? "ط£ط¶ظپ VITE_FIREBASE_VAPID_KEY ظپظٹ ظ…ظ„ظپ ط§ظ„ط¨ظٹط¦ط© ط£ظˆظ„ظ‹ط§."
-          : "طھط¹ط°ط± طھظپط¹ظٹظ„ ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ظ…طھطµظپط­."
+          ? "أضف VITE_FIREBASE_VAPID_KEY في ملف البيئة أولًا."
+          : "تعذر تفعيل إشعارات المتصفح."
       );
     } finally {
       setNotificationsBusy(false);
@@ -790,16 +589,6 @@ export default function App() {
                 Hero Offers
               </button>
               <button
-                onClick={() => setAdminSection("sizes")}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                  adminSection === "sizes"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                Size Templates
-              </button>
-              <button
                 onClick={() => {
                   setAdminSection("orders");
                   markOrdersAsSeen();
@@ -846,22 +635,11 @@ export default function App() {
         {adminSection === "products" ? (
           <AdminPage
             products={products}
-            sizeTemplates={sizeTemplates}
             isLoading={isLoadingProducts}
             error={productsError}
             onCreateProduct={handleCreateProduct}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
-          />
-        ) : adminSection === "sizes" ? (
-          <AdminSizeTemplatesPage
-            templates={sizeTemplates}
-            products={products}
-            isLoading={isLoadingSizeTemplates}
-            error={sizeTemplatesError}
-            onCreateTemplate={handleCreateSizeTemplate}
-            onUpdateTemplate={handleUpdateSizeTemplate}
-            onDeleteTemplate={handleDeleteSizeTemplate}
           />
         ) : adminSection === "hero" ? (
           <AdminHeroPage
@@ -902,11 +680,6 @@ export default function App() {
           setPage("admin");
         }}
         onOpenCart={() => setOpenCart(true)}
-        onOpenAccount={() => {
-          setPage("shop");
-          navigateTo(authUser ? "/account" : "/login");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
         onOpenLogin={() => {
           setPage("shop");
           navigateTo("/login");
@@ -936,46 +709,15 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
-      ) : route.name === "account" ? (
-        authUser ? (
-          <AccountPage
-            currentUser={authUser}
-            profile={accountProfile}
-            orders={userOrders}
-            language={language}
-            isSaving={isSavingAccount}
-            onSave={handleSaveAccountProfile}
-            onBack={() => {
-              navigateTo("/");
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        ) : (
-          <AuthPage
-            language={language}
-            currentUser={authUser}
-            onLogin={handleUserLogin}
-            onSignup={handleUserSignup}
-            onForgotPassword={handleUserPasswordReset}
-            isBusy={isAuthBusy}
-            onBack={() => {
-              navigateTo("/");
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        )
-      ) : route.name === "favorites" ? (
-        <FavoritesPage language={language} />
       ) : route.name === "product" && isLoadingProducts ? (
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
           <p className="text-gray-500">
-            {language === "ar" ? "ط¬ط§ط±ظٹ طھط­ظ…ظٹظ„ ط§ظ„ظ…ظ†طھط¬..." : "Loading product..."}
+            {language === "ar" ? "جاري تحميل المنتج..." : "Loading product..."}
           </p>
         </div>
       ) : route.name === "product" && selectedProduct ? (
         <ProductPage
           product={selectedProduct}
-          sizeTemplates={sizeTemplates}
           onBack={backToShop}
           addToCart={addToCart}
           language={language}
@@ -986,23 +728,23 @@ export default function App() {
       ) : route.name === "product" ? (
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
           <p className="mb-3 text-sm tracking-[0.3em] text-gray-400">
-            {language === "ar" ? "ط§ظ„ظ…ظ†طھط¬ ط؛ظٹط± ظ…ظˆط¬ظˆط¯" : "Product Not Found"}
+            {language === "ar" ? "المنتج غير موجود" : "Product Not Found"}
           </p>
           <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-gray-900">
             {language === "ar"
-              ? "ظ‡ط°ط§ ط§ظ„ظ…ظ†طھط¬ ظ„ظ… ظٹط¹ط¯ ظ…طھط§ط­ظ‹ط§."
+              ? "هذا المنتج لم يعد متاحًا."
               : "This product is no longer available."}
           </h2>
           <p className="mb-8 text-gray-500">
             {language === "ar"
-              ? "ظ‚ط¯ ظٹظƒظˆظ† ط§ظ„ظ…ظ†طھط¬ ظ‚ط¯ ط­ظڈط°ظپ ط£ظˆ ط£ظ† ط§ظ„ط±ط§ط¨ط· ط؛ظٹط± طµط­ظٹط­."
+              ? "قد يكون المنتج قد حُذف أو أن الرابط غير صحيح."
               : "The item may have been removed or the link is incorrect."}
           </p>
           <button
             onClick={backToShop}
             className="rounded-full bg-black px-6 py-3 font-semibold text-white transition-colors hover:bg-gray-800"
           >
-            {language === "ar" ? "ط§ظ„ط¹ظˆط¯ط© ظ„ظ„ظ…طھط¬ط±" : "Back to Shop"}
+            {language === "ar" ? "العودة للمتجر" : "Back to Shop"}
           </button>
         </div>
       ) : (
@@ -1046,7 +788,7 @@ export default function App() {
           onClick={() => setOpenCart(true)}
           className="relative hidden rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-xl transition-all duration-150 hover:bg-gray-50 active:scale-95 sm:inline-flex"
         >
-          {language === "ar" ? "ط§ظ„ط³ظ„ط©" : "Cart"}
+          {language === "ar" ? "السلة" : "Cart"}
           {cart.reduce((sum, item) => sum + item.qty, 0) > 0 && (
             <span className="absolute -top-2 -right-2 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
               {cart.reduce((sum, item) => sum + item.qty, 0)}
@@ -1059,7 +801,7 @@ export default function App() {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white px-4 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.12)] sm:hidden"
         dir={language === "ar" ? "rtl" : "ltr"}
       >
-        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+        <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => {
@@ -1068,80 +810,50 @@ export default function App() {
               setSearchTerm("");
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-bold text-gray-700 transition-colors active:bg-gray-100"
+            className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100"
           >
-            <span className="text-lg" aria-hidden="true"><HomeIcon /></span>
+            <span className="text-lg" aria-hidden="true">
+              ⌂
+            </span>
             <span>{language === "ar" ? "الرئيسية" : "Home"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSearchFocusToken((value) => value + 1)}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-bold text-gray-700 transition-colors active:bg-gray-100"
+            className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100"
           >
-            <span className="text-lg" aria-hidden="true"><SearchIcon /></span>
+            <span className="text-lg" aria-hidden="true">
+              ⌕
+            </span>
             <span>{language === "ar" ? "البحث" : "Search"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setOpenCart(true)}
-            className="relative flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-bold text-gray-700 transition-colors active:bg-gray-100"
+            className="relative flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100"
           >
-            <span className="text-lg" aria-hidden="true"><CartIcon /></span>
+            <span className="text-lg" aria-hidden="true">
+              🛒
+            </span>
             <span>{language === "ar" ? "السلة" : "Cart"}</span>
             {cart.reduce((sum, item) => sum + item.qty, 0) > 0 && (
-              <span className="absolute right-4 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="absolute right-6 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 {cart.reduce((sum, item) => sum + item.qty, 0)}
               </span>
             )}
           </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setPage("shop");
-              navigateTo("/favorites");
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-bold text-gray-700 transition-colors active:bg-gray-100"
-          >
-            <span className="text-lg" aria-hidden="true"><HeartIcon /></span>
-            <span>{language === "ar" ? "المفضلة" : "Favorites"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setPage("shop");
-              navigateTo(authUser ? "/account" : "/login");
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-bold text-gray-700 transition-colors active:bg-gray-100"
-          >
-            <span className="text-lg" aria-hidden="true"><UserIcon /></span>
-            <span>{language === "ar" ? "الحساب" : "Account"}</span>
-          </button>
         </div>
-      </div>      {openCart && (
+      </div>
+
+      {openCart && (
         <Cart
           cart={cart}
           onClose={() => setOpenCart(false)}
           removeFromCart={removeFromCart}
           updateQty={updateQty}
           clearCart={clearCart}
-          currentUser={authUser}
-          accountProfile={accountProfile}
-          onRequireAuth={() => {
-            setPage("shop");
-            navigateTo("/login");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          onOpenAccount={() => {
-            setPage("shop");
-            navigateTo("/account");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
           language={language}
         />
       )}
@@ -1157,4 +869,3 @@ export default function App() {
     </div>
   );
 }
-

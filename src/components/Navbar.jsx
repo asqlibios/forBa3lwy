@@ -2,6 +2,35 @@ import { useEffect, useRef, useState } from "react";
 
 const WHATSAPP_NUMBER = "734743477";
 
+const COPY = {
+  ar: {
+    searchAria: "البحث في المنتجات",
+    searchPlaceholder: "ابحث بالاسم أو القسم",
+    settings: "الإعدادات",
+    admin: "الأدمن",
+    complaints: "الشكاوى والتواصل",
+    cart: "السلة",
+    darkMode: "الوضع الليلي",
+    language: "اللغة",
+    login: "تسجيل الدخول",
+    changeAccount: "تغيير الحساب",
+    signOut: "تسجيل الخروج",
+  },
+  en: {
+    searchAria: "Search products",
+    searchPlaceholder: "Search by name or category",
+    settings: "Settings",
+    admin: "Admin",
+    complaints: "Complaints",
+    cart: "Cart",
+    darkMode: "Dark mode",
+    language: "Language",
+    login: "Login",
+    changeAccount: "Change account",
+    signOut: "Sign out",
+  },
+};
+
 function buildComplaintUrl(language) {
   const message =
     language === "ar"
@@ -9,6 +38,57 @@ function buildComplaintUrl(language) {
       : "Hello, I have a complaint or question about the store.";
 
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+function SearchIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.82-.33 1.7 1.7 0 0 0-1 1.53V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.53 1.7 1.7 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .33-1.82 1.7 1.7 0 0 0-1.53-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.53-1 1.7 1.7 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.82.33h.01a1.7 1.7 0 0 0 1-1.53V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.53 1.7 1.7 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.33 1.82v.01a1.7 1.7 0 0 0 1.53 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.53 1Z" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
 }
 
 export default function Navbar({
@@ -21,6 +101,10 @@ export default function Navbar({
   onThemeToggle,
   onOpenAdmin,
   onOpenCart,
+  onOpenAccount,
+  onOpenLogin,
+  currentUser = null,
+  onLogout,
   searchFocusToken = 0,
 }) {
   const [openSettings, setOpenSettings] = useState(false);
@@ -28,6 +112,7 @@ export default function Navbar({
   const searchInputRef = useRef(null);
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
   const isDark = theme === "dark";
+  const copy = COPY[language] || COPY.en;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -54,6 +139,8 @@ export default function Navbar({
   }, [searchFocusToken]);
 
   const closeSettings = () => setOpenSettings(false);
+  const loginLabel =
+    currentUser?.displayName || currentUser?.email?.split("@")[0] || copy.login;
 
   return (
     <>
@@ -76,14 +163,8 @@ export default function Navbar({
               type="search"
               value={searchTerm}
               onChange={(event) => onSearchChange?.(event.target.value)}
-              aria-label={
-                language === "ar" ? "البحث في المنتجات" : "Search products"
-              }
-              placeholder={
-                language === "ar"
-                  ? "ابحث بالاسم أو القسم"
-                  : "Search by name or category"
-              }
+              aria-label={copy.searchAria}
+              placeholder={copy.searchPlaceholder}
               dir={language === "ar" ? "rtl" : "ltr"}
               className="h-9 w-full rounded-full border border-white/15 bg-white/10 text-xs text-white outline-none transition-all duration-300 placeholder:text-white/35 hover:border-white/35 hover:bg-white/14 focus:border-white/55 focus:bg-white/16 sm:h-11 sm:text-sm sm:hover:-translate-y-0.5 sm:hover:shadow-[0_10px_24px_rgba(255,255,255,0.08)] sm:focus:-translate-y-0.5 sm:focus:shadow-[0_14px_30px_rgba(255,255,255,0.12)]"
               style={{
@@ -97,22 +178,42 @@ export default function Navbar({
                 language === "ar" ? "right-4" : "left-4"
               }`}
             >
-             ⌕
+              <SearchIcon />
             </span>
           </label>
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            closeSettings();
+            onOpenAccount?.();
+          }}
+          className="max-w-[132px] shrink-0 truncate rounded-full border border-white/15 bg-white/8 px-4 py-2 text-xs font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/35 hover:bg-white/14 sm:max-w-[180px] sm:px-5 sm:py-2.5 sm:text-sm"
+          title={currentUser?.email || loginLabel}
+        >
+          {loginLabel}
+        </button>
 
         <div className="relative shrink-0" ref={settingsRef}>
           <button
             type="button"
             onClick={() => setOpenSettings((value) => !value)}
-            aria-label={language === "ar" ? "الإعدادات" : "Settings"}
+            aria-label={copy.settings}
             aria-expanded={openSettings}
-            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white text-base font-bold text-black transition-all duration-200 hover:scale-105 hover:bg-gray-100 active:scale-95 sm:h-11 sm:w-11 sm:text-xl"
+            className="group relative flex h-9 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/8 px-3 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/35 hover:bg-white/14 active:scale-95 sm:h-11 sm:px-4"
           >
-            ⚙
+            <span
+              aria-hidden="true"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm text-black transition-transform duration-200 group-hover:rotate-12"
+            >
+              <SettingsIcon />
+            </span>
+            <span className="hidden text-xs uppercase tracking-[0.2em] text-white/70 sm:inline">
+              {copy.settings}
+            </span>
             {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
+              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-black bg-red-500 px-1 text-xs font-bold text-white">
                 {totalItems}
               </span>
             )}
@@ -124,10 +225,38 @@ export default function Navbar({
               dir={language === "ar" ? "rtl" : "ltr"}
             >
               <div className="border-b border-gray-100 px-4 py-3">
-                <p className="text-sm font-extrabold">
-                  {language === "ar" ? "الإعدادات" : "Settings"}
-                </p>
+                <p className="text-sm font-extrabold">{copy.settings}</p>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeSettings();
+                  onOpenLogin?.();
+                }}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
+              >
+                <span>{currentUser ? copy.changeAccount : copy.login}</span>
+                <span aria-hidden="true">
+                  <ChevronIcon />
+                </span>
+              </button>
+
+              {currentUser && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeSettings();
+                    onLogout?.();
+                  }}
+                  className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+                >
+                  <span>{copy.signOut}</span>
+                  <span aria-hidden="true">
+                    <ChevronIcon />
+                  </span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -137,8 +266,10 @@ export default function Navbar({
                 }}
                 className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
               >
-                <span>{language === "ar" ? "الأدمن" : "Admin"}</span>
-                <span aria-hidden="true">›</span>
+                <span>{copy.admin}</span>
+                <span aria-hidden="true">
+                  <ChevronIcon />
+                </span>
               </button>
 
               <a
@@ -148,9 +279,7 @@ export default function Navbar({
                 onClick={closeSettings}
                 className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
               >
-                <span>
-                  {language === "ar" ? "الشكاوي والتواصل" : "Complaints"}
-                </span>
+                <span>{copy.complaints}</span>
                 <span className="text-xs text-green-600">WhatsApp</span>
               </a>
 
@@ -162,16 +291,14 @@ export default function Navbar({
                 }}
                 className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-gray-50"
               >
-                <span>{language === "ar" ? "السلة" : "Cart"}</span>
+                <span>{copy.cart}</span>
                 <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
                   {totalItems}
                 </span>
               </button>
 
               <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-                <span className="text-sm font-semibold">
-                  {language === "ar" ? "الوضع الليلي" : "Dark mode"}
-                </span>
+                <span className="text-sm font-semibold">{copy.darkMode}</span>
                 <button
                   type="button"
                   onClick={onThemeToggle}
@@ -194,7 +321,7 @@ export default function Navbar({
 
               <div className="border-t border-gray-100 px-4 py-3">
                 <p className="mb-2 text-xs font-bold uppercase text-gray-400">
-                  {language === "ar" ? "اللغة" : "Language"}
+                  {copy.language}
                 </p>
                 <div className="flex items-center rounded-full bg-gray-100 p-1">
                   <button
@@ -225,14 +352,6 @@ export default function Navbar({
           )}
         </div>
       </nav>
-
-      <style>{`
-        @keyframes pop {
-          0% { transform: scale(0); }
-          70% { transform: scale(1.3); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
     </>
   );
 }
